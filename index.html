@@ -688,30 +688,52 @@ function exportResult(){
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,buildAuditSheet(results),'ผลตรวจสอบ');
 
-  // ===== สรุป =====
-  const w=results.filter(r=>r.cr!=null&&!isNaN(r.cr));
-  const over=w.filter(r=>r.status==='over'),weight=w.filter(r=>r.status==='weight');
+  // ===== สรุป (ครบเท่าหน้า Dashboard) =====
   const money0=v=>Math.round(v*100)/100;
-  const S=[['รายการ','จำนวน','บาท','—'],
+  const matched=results.filter(r=>r.cr!=null&&!isNaN(r.cr)&&r.correctOurs!=null&&!['zero','skip','nobill','err'].includes(r.status));
+  const Sm=(a,f)=>a.reduce((s,r)=>s+(f(r)||0),0);
+  const paid=Sm(matched,r=>r.cr), shouldOurs=Sm(matched,r=>r.correctOurs), net=paid-shouldOurs;
+  const over=matched.filter(r=>r.status==='over'),under=matched.filter(r=>r.status==='under'),special=matched.filter(r=>r.status==='special');
+  const overSum=Sm(over,r=>r.rateErr),underSum=Sm(under,r=>r.rateErr),specialSum=Sm(special,r=>r.rateErr);
+  const weightSum=Sm(matched,r=>r.wCost),weightCnt=matched.filter(r=>Math.abs(r.wCost||0)>0.001).length;
+  const byCar=c=>{const a=matched.filter(r=>r.carrier===c);return{n:a.length,paid:Sm(a,r=>r.cr),ours:Sm(a,r=>r.correctOurs)};};
+  const fl=byCar('flash'),po=byCar('post');
+  // [label, count, money, kind]  kind: 'sec' | 'net' | status | ''
+  const S=[['รายการ','จำนวน','บาท','head'],
+    ['▌ ภาพรวมเงิน','','','sec'],
+    ['💰 รวมที่เราจ่ายจริง',matched.length,money0(paid),''],
+    ['✅ ที่ควรจ่าย (ตามน้ำหนักที่เราบันทึก)','',money0(shouldOurs),''],
+    ['จ่ายเกินสุทธิ (บวก=เสียเปรียบ / ลบ=ได้เปรียบ)','',money0(net),'net'],
+    ['▌ แยกสาเหตุ','','','sec'],
+    ['🟦 น้ำหนักขนส่งชั่งต่างจากเรา (ต้องพิสูจน์)',weightCnt,money0(weightSum),'weight'],
+    ['🟥 ขนส่งคิดเรทเกิน (เคลมคืนได้)',over.length,money0(overSum),'over'],
+    ['🟧 ขนส่งคิดเรทขาด (เราได้เปรียบ)',under.length,money0(underSum),'under'],
+    ['🟪 พื้นที่พิเศษ (ค่าใช้จ่ายปกติ)',special.length,money0(specialSum),'special'],
+    ['▌ แยกตามขนส่ง','','','sec'],
+    ['Flash — จ่ายจริง',fl.n,money0(fl.paid),''],
+    ['Flash — ควรจ่าย','',money0(fl.ours),''],
+    ['Flash — ส่วนต่าง','',money0(fl.paid-fl.ours),'net'],
+    ['ไปรษณีย์ — จ่ายจริง',po.n,money0(po.paid),''],
+    ['ไปรษณีย์ — ควรจ่าย','',money0(po.ours),''],
+    ['ไปรษณีย์ — ส่วนต่าง','',money0(po.paid-po.ours),'net'],
+    ['▌ อื่นๆ','','','sec'],
     ['พัสดุทั้งหมด',results.length,'',''],
-    ['รวมเรทที่ควรเป็น (ตามนน.เรา)','',money0(results.filter(r=>r.correctOurs!=null).reduce((s,r)=>s+r.correctOurs,0)),''],
-    ['ตรง',w.filter(r=>r.status==='ok').length,'','ok'],
-    ['🟥 ขนส่งเก็บเกิน (เคลมคืนได้)',over.length,money0(over.reduce((s,r)=>s+r.rateErr,0)),'over'],
-    ['🟧 เก็บขาด (เราได้เปรียบ)',w.filter(r=>r.status==='under').length,money0(w.filter(r=>r.status==='under').reduce((s,r)=>s+Math.abs(r.rateErr),0)),'under'],
-    ['🟦 น้ำหนักขนส่งชั่งเกิน (จ่ายเกิน · ต้องพิสูจน์)',weight.length,money0(weight.reduce((s,r)=>s+(r.wCost||0),0)),'weight'],
-    ['🟪 พื้นที่พิเศษ',w.filter(r=>r.status==='special').length,'','special'],
+    ['ตรง',matched.filter(r=>r.status==='ok').length,'','ok'],
     ['ยอดเก็บ 0 (ยกเลิก/ตีกลับ)',results.filter(r=>r.status==='zero').length,'','zero'],
-    ['ยังไม่มีบิล',results.filter(r=>r.status==='nobill').length,'','nobill']];
+    ['ยังไม่มีบิล',results.filter(r=>r.status==='nobill').length,'','nobill'],
+    ['รับเอง',results.filter(r=>r.status==='skip').length,'','skip']];
   const sums=XLSX.utils.aoa_to_sheet(S.map(r=>r.slice(0,3)));
-  sums['!cols']=[{wch:42},{wch:12},{wch:14}];
+  sums['!cols']=[{wch:46},{wch:12},{wch:15}];
   styleHeader(sums,3);
-  const srng=XLSX.utils.decode_range(sums['!ref']);
-  for(let R=1;R<=srng.e.r;R++){
-    const cf=ST_EXPORT[S[R][3]];
+  for(let R=1;R<S.length;R++){
+    const kind=S[R][3];
     for(let C=0;C<=2;C++){const a=XLSX.utils.encode_cell({r:R,c:C}),cell=sums[a];if(!cell)continue;
       cell.s={alignment:{horizontal:C===0?'left':'center',vertical:'center'},border:XB,font:{sz:11,bold:C===0}};
       if(C===2&&typeof cell.v==='number')cell.z='#,##0.00';
-      if(cf)cell.s={...cell.s,fill:{fgColor:{rgb:cf[1]}},font:{...cell.s.font,color:{rgb:cf[2]}}};}
+      if(kind==='sec'){cell.s={...cell.s,fill:{fgColor:{rgb:'D6E4F0'}},font:{sz:11,bold:true,color:{rgb:'1F3864'}}};}
+      else if(kind==='net'){const val=S[R][2];const rgb=(typeof val==='number'&&val>0.5)?'C00000':(typeof val==='number'&&val<-0.5)?'1E7145':'1F3864';if(C>=1)cell.s={...cell.s,font:{...cell.s.font,bold:true,color:{rgb}}};}
+      else{const cf=ST_EXPORT[kind];if(cf)cell.s={...cell.s,fill:{fgColor:{rgb:cf[1]}},font:{...cell.s.font,color:{rgb:cf[2]}}};}
+    }
   }
   XLSX.utils.book_append_sheet(wb,sums,'สรุป');
 
