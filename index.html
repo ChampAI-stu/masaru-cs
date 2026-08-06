@@ -553,20 +553,21 @@ function doAudit(mu,bill){
 }
 function renderKPI(){
   const wb=results.filter(r=>r.cr!=null&&!isNaN(r.cr));
-  const over=wb.filter(r=>r.status==='over'),under=wb.filter(r=>r.status==='under');
-  const weight=wb.filter(r=>r.status==='weight'),special=wb.filter(r=>r.status==='special');
-  const ok=wb.filter(r=>r.status==='ok');
+  const matched=wb.filter(r=>r.correctOurs!=null&&!['zero'].includes(r.status));
+  const over=matched.filter(r=>r.status==='over'),under=matched.filter(r=>r.status==='under'),special=matched.filter(r=>r.status==='special');
+  const ok=matched.filter(r=>r.status==='ok');
   const s=a=>a.reduce((x,r)=>x+Math.abs(r.rateErr||0),0);
-  const wcost=weight.reduce((x,r)=>x+(r.wCost||0),0);
-  const correctSum=results.filter(r=>r.correctOurs!=null).reduce((x,r)=>x+r.correctOurs,0);
+  const wcost=matched.reduce((x,r)=>x+(r.wCost||0),0);                 // รวมทุกบิล (เท่า Dashboard)
+  const wcnt=matched.filter(r=>Math.abs(r.wCost||0)>0.001).length;
+  const correctSum=matched.reduce((x,r)=>x+r.correctOurs,0);           // เฉพาะที่มีบิล (เท่า Dashboard)
   document.getElementById('kpis').innerHTML=
    '<div class="kpi total"><div class="n">'+results.length+'</div><div class="l">พัสดุทั้งหมด</div></div>'+
-   '<div class="kpi info"><div class="n">฿'+Math.round(correctSum).toLocaleString('th-TH')+'</div><div class="l">รวมเรทที่ควรเป็น (นน.เรา)</div></div>'+
+   '<div class="kpi info"><div class="n">฿'+Math.round(correctSum).toLocaleString('th-TH')+'</div><div class="l">ควรจ่าย (เฉพาะที่มีบิล)</div></div>'+
    (wb.length?
     '<div class="kpi ok"><div class="n">'+ok.length+'</div><div class="l">ตรง</div></div>'+
     '<div class="kpi over"><div class="n">'+over.length+'</div><div class="l">เก็บเกิน(เรท) ฿'+s(over).toFixed(0)+'</div></div>'+
     '<div class="kpi under"><div class="n">'+under.length+'</div><div class="l">เก็บขาด(เรท) ฿'+s(under).toFixed(0)+'</div></div>'+
-    '<div class="kpi weight"><div class="n">'+weight.length+'</div><div class="l">นน.ขนส่งชั่งเกิน · จ่ายเกิน ฿'+wcost.toFixed(0)+'</div></div>'+
+    '<div class="kpi weight"><div class="n">'+wcnt+'</div><div class="l">นน.ขนส่งชั่งเกิน · จ่ายเกิน ฿'+wcost.toFixed(0)+'</div></div>'+
     '<div class="kpi" style="background:#6b4fa3"><div class="n">'+special.length+'</div><div class="l">พื้นที่พิเศษ</div></div>'
     :'<div class="kpi weight"><div class="n">—</div><div class="l">ยังไม่อัปบิล (เห็นเรทที่ควรเป็นก่อน)</div></div>');
 }
@@ -613,7 +614,8 @@ function renderDashboard(){
 function renderAlert(){
   const box=document.getElementById('alertBox');
   const wb=results.filter(r=>r.cr!=null&&!isNaN(r.cr));
-  const over=wb.filter(r=>r.status==='over'),under=wb.filter(r=>r.status==='under'),weight=wb.filter(r=>r.status==='weight');
+  const over=wb.filter(r=>r.status==='over'),under=wb.filter(r=>r.status==='under');
+  const weight=wb.filter(r=>r.correctOurs!=null&&r.status!=='zero'&&Math.abs(r.wCost||0)>0.001);
   const err=results.filter(r=>r.status==='err');
   const nobill=(flashBillData||postBillData)?results.filter(r=>r.status==='nobill'):[];
   const s=a=>a.reduce((x,r)=>x+Math.abs(r.rateErr||0),0).toLocaleString('th-TH',{maximumFractionDigits:0});
@@ -638,7 +640,8 @@ const cls={ok:'ok',over:'over',under:'under',weight:'weight',special:'special',e
 const badge={ok:'🟩 ตรง',over:'🟥 เก็บเกิน',under:'🟧 เก็บขาด',weight:'🟦 นน.ชั่งเกิน',special:'🟪 พื้นที่พิเศษ',err:'⬜ คำนวณไม่ได้',skip:'⬜ รับเอง',nobill:'⬜ ยังไม่มีบิล',zero:'⬜ ยอดเก็บ 0 (ตรวจ)'};
 function renderTable(){
   const f=document.getElementById('flt').value;let rows=results;
-  if(f==='prob')rows=results.filter(r=>['over','under','weight'].includes(r.status));
+  if(f==='prob')rows=results.filter(r=>r.status==='over'||r.status==='under'||(r.correctOurs!=null&&r.status!=='zero'&&Math.abs(r.wCost||0)>0.001));
+  else if(f==='weight')rows=results.filter(r=>r.correctOurs!=null&&r.status!=='zero'&&r.cr!=null&&!isNaN(r.cr)&&Math.abs(r.wCost||0)>0.001);
   else if(f!=='all')rows=results.filter(r=>r.status===f);
   document.getElementById('cntInfo').textContent='แสดง '+rows.length+' / '+results.length;
   const fmt=v=>v==null||isNaN(v)?'–':(+v).toLocaleString('th-TH',{maximumFractionDigits:2});
