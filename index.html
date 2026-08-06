@@ -87,6 +87,7 @@
 </header>
 <div class="tabs">
   <button class="tab-btn active" data-tab="batch">📊 ตรวจสอบชุด</button>
+  <button class="tab-btn" data-tab="dash">📈 ยอดรวม</button>
   <button class="tab-btn" data-tab="single">🧮 คำนวณเดี่ยว</button>
   <button class="tab-btn" data-tab="rate">📋 ตารางเรท (แก้ได้)</button>
   <button class="tab-btn" data-tab="settings">⚙️ ตั้งค่า</button>
@@ -138,6 +139,13 @@
     <p class="muted" style="margin-top:8px"><b>เรทของเรา</b> = คำนวณจาก "นน.เรา" (น้ำหนักที่เราบันทึก) · <b>เรทควรเป็น</b> = คำนวณจาก "นน.ขนส่ง" (น้ำหนักที่ขนส่งชั่งจริง) — ใช้ตัวนี้เทียบกับที่จ่ายจริง</p>
     <p class="muted" style="margin-top:4px"><b>ต่าง(เรท)</b> = เราจ่ายจริง − เรทควรเป็น (บวก=โดนคิดเกิน) · <b>ส่วนเกินจากนน.</b> = เรทควรเป็น − เรทของเรา (ส่วนที่แพงขึ้นเพราะขนส่งชั่งหนักกว่า)</p>
     <p class="muted" style="margin-top:4px">🟥 ขนส่งคิดเรทเกิน · 🟧 เก็บขาด · 🟦 น้ำหนักขนส่งชั่งหนักกว่าเราบันทึก (จ่ายเกินจากน้ำหนัก) · 🟪 พื้นที่พิเศษ · 🟩 ตรง</p>
+  </div>
+</div>
+
+<div id="tab-dash" class="hide">
+  <div class="card"><h2>ยอดรวม · เสียเปรียบค่าขนส่งเท่าไหร่</h2>
+    <div id="dashBody"><p class="muted">ยังไม่มีข้อมูล — ไปแท็บ "📊 ตรวจสอบชุด" อัปไฟล์ JST + บิลขนส่ง แล้วกดตรวจสอบก่อน</p></div>
+    <p class="muted" style="margin-top:12px">* หน้านี้แสดง "จ่ายเกินจากที่ควรเป็น" (เงินรั่ว/เสียเปรียบ) ไม่ใช่กำไรจริง เพราะเราไม่มีข้อมูลค่าส่งที่เก็บจากลูกค้า</p>
   </div>
 </div>
 
@@ -539,7 +547,7 @@ function doAudit(mu,bill){
       else out.status=out.rateErr>0?'over':'under';
     }
     return out;});
-  renderKPI();renderTable();renderAlert();
+  renderKPI();renderTable();renderAlert();renderDashboard();
   document.getElementById('resultCard').classList.remove('hide');
   document.getElementById('resultCard').scrollIntoView({behavior:'smooth'});
 }
@@ -562,6 +570,46 @@ function renderKPI(){
     '<div class="kpi" style="background:#6b4fa3"><div class="n">'+special.length+'</div><div class="l">พื้นที่พิเศษ</div></div>'
     :'<div class="kpi weight"><div class="n">—</div><div class="l">ยังไม่อัปบิล (เห็นเรทที่ควรเป็นก่อน)</div></div>');
 }
+function renderDashboard(){
+  const el=document.getElementById('dashBody');if(!el)return;
+  const matched=results.filter(r=>r.cr!=null&&!isNaN(r.cr)&&r.correctOurs!=null&&!['zero','skip','nobill','err'].includes(r.status));
+  if(!matched.length){el.innerHTML='<div class="note warn">ยังไม่มีข้อมูลที่เทียบได้ — ต้องอัป "บิลขนส่ง" ด้วย แล้วกดตรวจสอบ (หน้านี้ต้องมียอดที่จ่ายจริงจากบิล)</div>';return;}
+  const S=(a,f)=>a.reduce((s,r)=>s+(f(r)||0),0);
+  const B=v=>'฿'+(Math.round(v*100)/100).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const sg=v=>(v>0?'+':'')+B(v);
+  const col=v=>v>0.5?'var(--red)':v<-0.5?'var(--green)':'var(--ink)';
+  const paid=S(matched,r=>r.cr), shouldOurs=S(matched,r=>r.correctOurs), shouldCar=S(matched,r=>r.correctCarrier);
+  const net=paid-shouldOurs, netCar=paid-shouldCar;
+  const over=matched.filter(r=>r.status==='over'),under=matched.filter(r=>r.status==='under'),special=matched.filter(r=>r.status==='special');
+  const overSum=S(over,r=>r.rateErr),underSum=S(under,r=>r.rateErr),specialSum=S(special,r=>r.rateErr);
+  const weightSum=S(matched,r=>r.wCost),weightCnt=matched.filter(r=>Math.abs(r.wCost||0)>0.001).length;
+  const netColor=net>0.5?'var(--red)':net<-0.5?'var(--green)':'var(--navy)';
+  const netLabel=net>0.5?'🔺 จ่ายเกิน (เสียเปรียบ)':net<-0.5?'🔻 จ่ายน้อยกว่าควร (ได้เปรียบ)':'พอดี';
+  const byCar=c=>{const a=matched.filter(r=>r.carrier===c);return{n:a.length,paid:S(a,r=>r.cr),ours:S(a,r=>r.correctOurs)};};
+  const fl=byCar('flash'),po=byCar('post');
+  const carRow=(nm,x)=>x.n?('<tr><td style="text-align:left"><b>'+nm+'</b></td><td>'+x.n.toLocaleString('th-TH')+'</td><td>'+B(x.paid)+'</td><td>'+B(x.ours)+'</td><td style="color:'+col(x.paid-x.ours)+';font-weight:700">'+sg(x.paid-x.ours)+'</td></tr>'):'';
+  el.innerHTML=
+  '<div class="kpi-grid" style="margin-bottom:18px">'+
+   '<div class="kpi" style="background:var(--navy)"><div class="n">'+B(paid)+'</div><div class="l">💰 รวมที่เราจ่ายจริง ('+matched.length.toLocaleString('th-TH')+' พัสดุ)</div></div>'+
+   '<div class="kpi" style="background:var(--green)"><div class="n">'+B(shouldOurs)+'</div><div class="l">✅ ที่ควรจ่าย (ตามน้ำหนักที่เราบันทึก)</div></div>'+
+   '<div class="kpi" style="background:'+netColor+'"><div class="n">'+sg(net)+'</div><div class="l">'+netLabel+'</div></div>'+
+  '</div>'+
+  '<h3 style="color:var(--navy);border-left:4px solid var(--brand);padding-left:10px">แยกสาเหตุ</h3>'+
+  '<table><tr><th>สาเหตุ</th><th>จำนวน</th><th>เงิน</th><th>ทำอะไรได้</th></tr>'+
+   '<tr><td style="text-align:left">🟦 น้ำหนักขนส่งชั่งต่างจากเรา</td><td>'+weightCnt.toLocaleString('th-TH')+'</td><td style="color:'+col(weightSum)+';font-weight:700">'+sg(weightSum)+'</td><td style="text-align:left">ต้องสุ่มชั่งพิสูจน์ก่อน</td></tr>'+
+   '<tr><td style="text-align:left">🟥 ขนส่งคิดเรทเกิน</td><td>'+over.length+'</td><td style="color:var(--red);font-weight:700">'+sg(overSum)+'</td><td style="text-align:left">เคลมเงินคืนได้</td></tr>'+
+   '<tr><td style="text-align:left">🟧 ขนส่งคิดเรทขาด</td><td>'+under.length+'</td><td style="color:var(--green);font-weight:700">'+sg(underSum)+'</td><td style="text-align:left">เราได้เปรียบ</td></tr>'+
+   '<tr><td style="text-align:left">🟪 พื้นที่พิเศษ</td><td>'+special.length+'</td><td style="font-weight:700">'+sg(specialSum)+'</td><td style="text-align:left">ค่าใช้จ่ายปกติ (เลี่ยงไม่ได้)</td></tr>'+
+   '<tr style="background:var(--rowLight)"><td style="text-align:left"><b>รวมจ่ายเกินสุทธิ</b></td><td></td><td style="color:'+col(net)+';font-weight:700">'+sg(net)+'</td><td style="text-align:left">= ผลรวมทั้งหมด</td></tr>'+
+  '</table>'+
+  '<h3 style="color:var(--navy);border-left:4px solid var(--brand);padding-left:10px;margin-top:18px">แยกตามขนส่ง</h3>'+
+  '<table><tr><th>ขนส่ง</th><th>พัสดุ</th><th>จ่ายจริง</th><th>ควรจ่าย</th><th>ส่วนต่าง</th></tr>'+
+   carRow('Flash',fl)+carRow('ไปรษณีย์',po)+
+   '<tr style="background:var(--rowLight)"><td style="text-align:left"><b>รวม</b></td><td>'+matched.length.toLocaleString('th-TH')+'</td><td>'+B(paid)+'</td><td>'+B(shouldOurs)+'</td><td style="color:'+col(net)+';font-weight:700">'+sg(net)+'</td></tr>'+
+  '</table>'+
+  '<div class="note" style="margin-top:14px"><b>อ่านผล:</b> "จ่ายเกินสุทธิ '+sg(net)+'" คือเทียบกับที่ควรจ่ายตามน้ำหนักที่เราบันทึก · ในนี้ <b>เคลมได้จริง = 🟥 เก็บเกิน '+sg(overSum)+'</b> · ส่วน 🟦 น้ำหนัก '+sg(weightSum)+' ต้องพิสูจน์ก่อน (น้ำหนักเราเป็นค่าประมาณ)</div>';
+}
+
 function renderAlert(){
   const box=document.getElementById('alertBox');
   const wb=results.filter(r=>r.cr!=null&&!isNaN(r.cr));
@@ -606,12 +654,12 @@ const ST_EXPORT={
   skip:['รับเอง','F5F5F5','888888'],err:['คำนวณไม่ได้','EEEEEE','888888']};
 const XB={top:{style:'thin',color:{rgb:'D9D9D9'}},bottom:{style:'thin',color:{rgb:'D9D9D9'}},left:{style:'thin',color:{rgb:'D9D9D9'}},right:{style:'thin',color:{rgb:'D9D9D9'}}};
 function styleHeader(ws,ncol){for(let C=0;C<ncol;C++){const a=XLSX.utils.encode_cell({r:0,c:C});if(ws[a])ws[a].s={fill:{fgColor:{rgb:'1F3864'}},font:{color:{rgb:'FFFFFF'},bold:true,sz:11},alignment:{horizontal:'center',vertical:'center',wrapText:true},border:XB};}}
-function exportResult(){
+function buildAuditSheet(rows){
   const num=v=>(v==null||isNaN(v))?'':+v;
   const carLabel=c=>c==='flash'?'Flash':c==='post'?'ไปรษณีย์':'รับเอง';
   const headers=['เลขพัสดุ','ขนส่ง','นน.เรา','นน.ขนส่ง','Δนน.','COD','เรทของเรา','เรทควรเป็น','เราจ่ายจริง','ต่าง(เรท)','ส่วนเกินจากนน.','สถานะ','คิดจาก'];
   const aoa=[headers];
-  results.forEach(r=>aoa.push([r.tracking||'',carLabel(r.carrier),num(r.ourW),num(r.carrierW),num(r.wDiff),num(r.cod),
+  rows.forEach(r=>aoa.push([r.tracking||'',carLabel(r.carrier),num(r.ourW),num(r.carrierW),num(r.wDiff),num(r.cod),
     num(r.correctOurs),num(r.correctCarrier),num(r.cr),num(r.rateErr),num(r.wCost),(ST_EXPORT[r.status]||['',''])[0],r.basis||'']));
   const ws=XLSX.utils.aoa_to_sheet(aoa);
   ws['!cols']=[{wch:18},{wch:10},{wch:9},{wch:10},{wch:8},{wch:10},{wch:11},{wch:12},{wch:12},{wch:11},{wch:14},{wch:13},{wch:38}];
@@ -625,7 +673,7 @@ function exportResult(){
   }
   styleHeader(ws,headers.length);
   for(let R=1;R<=rng.e.r;R++){
-    const st=results[R-1]&&results[R-1].status,cf=ST_EXPORT[st];
+    const cf=ST_EXPORT[rows[R-1]&&rows[R-1].status];
     if(cf){const a=XLSX.utils.encode_cell({r:R,c:11});if(ws[a])ws[a].s={...ws[a].s,fill:{fgColor:{rgb:cf[1]}},font:{color:{rgb:cf[2]},bold:true,sz:10}};}
     const da=XLSX.utils.encode_cell({r:R,c:9}),dc=ws[da];
     if(dc&&typeof dc.v==='number'&&dc.v>0.001)dc.s={...dc.s,font:{color:{rgb:'C00000'},bold:true,sz:10}};
@@ -634,7 +682,11 @@ function exportResult(){
   }
   ws['!autofilter']={ref:ws['!ref']};
   ws['!freeze']={xSplit:0,ySplit:1,topLeftCell:'A2',activePane:'bottomLeft',state:'frozen'};
-  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'ผลตรวจสอบ');
+  return ws;
+}
+function exportResult(){
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,buildAuditSheet(results),'ผลตรวจสอบ');
 
   // ===== สรุป =====
   const w=results.filter(r=>r.cr!=null&&!isNaN(r.cr));
@@ -655,13 +707,14 @@ function exportResult(){
   styleHeader(sums,3);
   const srng=XLSX.utils.decode_range(sums['!ref']);
   for(let R=1;R<=srng.e.r;R++){
-    const key=S[R][3],cf=ST_EXPORT[key];
+    const cf=ST_EXPORT[S[R][3]];
     for(let C=0;C<=2;C++){const a=XLSX.utils.encode_cell({r:R,c:C}),cell=sums[a];if(!cell)continue;
       cell.s={alignment:{horizontal:C===0?'left':'center',vertical:'center'},border:XB,font:{sz:11,bold:C===0}};
       if(C===2&&typeof cell.v==='number')cell.z='#,##0.00';
       if(cf)cell.s={...cell.s,fill:{fgColor:{rgb:cf[1]}},font:{...cell.s.font,color:{rgb:cf[2]}}};}
   }
   XLSX.utils.book_append_sheet(wb,sums,'สรุป');
+
   XLSX.writeFile(wb,'ผลตรวจสอบค่าขนส่ง_'+new Date().toISOString().slice(0,10)+'.xlsx');
 }
 
@@ -735,7 +788,7 @@ function closeEdit(keep){
 /* ===== TABS ===== */
 document.querySelectorAll('.tab-btn').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');
-  ['batch','single','rate','settings','help'].forEach(t=>document.getElementById('tab-'+t).classList.add('hide'));
+  ['batch','dash','single','rate','settings','help'].forEach(t=>document.getElementById('tab-'+t).classList.add('hide'));
   document.getElementById('tab-'+b.dataset.tab).classList.remove('hide');});
 renderFlashEdit();renderPostEdit();
 </script>
