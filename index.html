@@ -135,7 +135,8 @@
       </select><span class="muted" id="cntInfo"></span>
     </div>
     <div class="tbl-scroll"><table id="resTbl"></table></div>
-    <p class="muted" style="margin-top:8px"><b>ควรเป็น</b> = ราคาถูกต้องตามเรท · <b>💰 เราจ่ายจริง</b> = ยอดที่ขนส่งเรียกเก็บ (เงินที่เราจ่าย) · <b>ต่าง(เรท)</b> = เราจ่ายจริง − ควรเป็น</p>
+    <p class="muted" style="margin-top:8px"><b>เรทของเรา</b> = คำนวณจาก "นน.เรา" (น้ำหนักที่เราบันทึก) · <b>เรทควรเป็น</b> = คำนวณจาก "นน.ขนส่ง" (น้ำหนักที่ขนส่งชั่งจริง) — ใช้ตัวนี้เทียบกับที่จ่ายจริง</p>
+    <p class="muted" style="margin-top:4px"><b>ต่าง(เรท)</b> = เราจ่ายจริง − เรทควรเป็น (บวก=โดนคิดเกิน) · <b>ส่วนเกินจากนน.</b> = เรทควรเป็น − เรทของเรา (ส่วนที่แพงขึ้นเพราะขนส่งชั่งหนักกว่า)</p>
     <p class="muted" style="margin-top:4px">🟥 ขนส่งคิดเรทเกิน · 🟧 เก็บขาด · 🟦 น้ำหนักขนส่งชั่งหนักกว่าเราบันทึก (จ่ายเกินจากน้ำหนัก) · 🟪 พื้นที่พิเศษ · 🟩 ตรง</p>
   </div>
 </div>
@@ -249,6 +250,32 @@
       <tr><td>ต่าง(เรท)</td><td>ขนส่งเก็บ − ควรเป็น · บวก = เก็บเกิน · ลบ = เก็บขาด</td></tr>
       <tr><td>ส่วนเกินจากนน.</td><td>ค่าส่งส่วนที่แพงขึ้นเพราะขนส่งชั่งหนักกว่าเรา (เทียบเรทตามนน.ขนส่ง กับ เรทตามนน.เรา)</td></tr>
     </table>
+  </div>
+
+  <div class="card"><h2>สูตรการคิดเรท (ระบบคำนวณยังไง)</h2>
+    <p style="margin:0 0 8px">ระบบคำนวณ "เรท" จากตารางเรท (แท็บ 📋) + น้ำหนัก โดยแยกเป็น 2 ค่า ต่างกันแค่ใช้น้ำหนักคนละตัว:</p>
+    <div class="note"><b>เรทของเรา</b> = คิดจาก <b>นน.เรา</b> (ที่บันทึกใน JST) · <b>เรทควรเป็น</b> = คิดจาก <b>นน.ขนส่ง</b> (ที่ขนส่งชั่งจริง) — สูตรเดียวกัน ต่างที่น้ำหนัก</div>
+
+    <h3>🟡 Flash</h3>
+    <ol class="help">
+      <li>น้ำหนักคิดค่า = น้ำหนักจริง <span class="muted">(ถ้าเปิด "คิดปริมาตร" = ตัวที่มากกว่าระหว่าง น้ำหนักจริง กับ ปริมาตร÷ตัวหาร)</span></li>
+      <li>เปิดตารางเรท Flash ตามน้ำหนักคิดค่า → ได้ <b>เรทฐาน</b> (BKK/UPC ตามจังหวัดปลายทาง)</li>
+      <li>+ <b>ค่าธรรมเนียม COD 1%</b> ของยอด COD</li>
+      <li><b>รวม = เรทฐาน + (COD × 1%)</b> ← ตรงกับยอด Total ในบิล Flash</li>
+      <li class="muted">กรณี &gt;50kg: ทุก 5cm=1kg → ×15฿ (BKK) / ×10฿ (UPC)</li>
+    </ol>
+    <div class="note"><b>ตัวอย่าง:</b> น้ำหนัก 2.74kg, COD 2,190฿ → เรทฐาน (≤3.5kg) = 12฿ + COD (2,190×1%) = 21.9฿ → <b>รวม 33.9฿</b></div>
+
+    <h3>🔴 ไปรษณีย์ไทย</h3>
+    <ol class="help">
+      <li>เปิดตารางเรทไปรษณีย์ตามน้ำหนัก → <b>เรทฐาน</b> (≤1kg=20 · ≤2kg=30 · เพิ่มขั้นละ 10฿ ถึง 110 แล้วขั้นละ 5฿ ถึง 160)</li>
+      <li>+ <b>2฿/ชิ้น</b> (ค่าบริการเพิ่ม สัญญาข้อ 7)</li>
+      <li>+ <b>20฿</b> ถ้าปลายทางพื้นที่พิเศษ</li>
+      <li><b>ค่าบริการ = เรทฐาน + 2 (+20 ถ้าพื้นที่พิเศษ)</b></li>
+      <li class="muted">COD ของไปรษณีย์คิดแยกรอบ (ไม่รวมในค่าบริการ) · &gt;20kg: ฐาน 160 + 15฿ ต่อ kg ที่เกิน 20</li>
+    </ol>
+    <div class="note"><b>ตัวอย่าง:</b> น้ำหนัก 0.4kg → เรทฐาน (≤1kg) = 20฿ + 2฿ = <b>รวม 22฿</b></div>
+    <p class="muted" style="margin:8px 0 0">แก้ตัวเลขเรท/ค่าธรรมเนียมได้ในแท็บ 📋 ตารางเรท และ ⚙️ ตั้งค่า — คำนวณใหม่ทันที</p>
   </div>
 
   <div class="card"><h2>จะรู้ได้ไงว่า "โดนโกง" — อ่านผลยังไง</h2>
@@ -563,8 +590,8 @@ function renderTable(){
   document.getElementById('cntInfo').textContent='แสดง '+rows.length+' / '+results.length;
   const fmt=v=>v==null||isNaN(v)?'–':(+v).toLocaleString('th-TH',{maximumFractionDigits:2});
   const sg=v=>v==null?'–':(v>0?'+':'')+fmt(v);
-  let h='<tr><th>เลขพัสดุ</th><th>ขนส่ง</th><th>นน.เรา</th><th>นน.ขนส่ง</th><th>Δนน.</th><th>COD</th><th>ควรเป็น</th><th>💰 เราจ่ายจริง</th><th>ต่าง(เรท)</th><th>ส่วนเกินจากนน.</th><th>สถานะ</th></tr>';
-  h+=rows.slice(0,4000).map(r=>'<tr class="'+cls[r.status]+'"><td>'+(r.tracking||'–')+'</td><td>'+(r.carrier==='flash'?'Flash':r.carrier==='post'?'ปณ':'รับเอง')+'</td><td>'+fmt(r.ourW)+'</td><td>'+fmt(r.carrierW)+'</td><td>'+(r.wDiff!=null&&r.wDiff>0?'<b style="color:var(--red)">'+sg(r.wDiff)+'</b>':sg(r.wDiff))+'</td><td>'+(r.cod?fmt(r.cod):'–')+'</td><td><b>'+fmt(r.correctCarrier)+'</b></td><td>'+fmt(r.cr)+'</td><td><b>'+sg(r.rateErr)+'</b></td><td>'+(r.wCost&&r.wCost>0?'<b style="color:var(--blue)">'+sg(r.wCost)+'</b>':sg(r.wCost))+'</td><td>'+badge[r.status]+'</td></tr>').join('');
+  let h='<tr><th>เลขพัสดุ</th><th>ขนส่ง</th><th>นน.เรา<br>(บันทึก)</th><th>นน.ขนส่ง<br>(ชั่งจริง)</th><th>Δนน.</th><th>COD</th><th>เรทของเรา<br>(จากนน.เรา)</th><th>เรทควรเป็น<br>(จากนน.ขนส่ง)</th><th>💰 เราจ่ายจริง</th><th>ต่าง(เรท)</th><th>ส่วนเกินจากนน.</th><th>สถานะ</th></tr>';
+  h+=rows.slice(0,4000).map(r=>'<tr class="'+cls[r.status]+'"><td>'+(r.tracking||'–')+'</td><td>'+(r.carrier==='flash'?'Flash':r.carrier==='post'?'ปณ':'รับเอง')+'</td><td>'+fmt(r.ourW)+'</td><td>'+fmt(r.carrierW)+'</td><td>'+(r.wDiff!=null&&r.wDiff>0?'<b style="color:var(--red)">'+sg(r.wDiff)+'</b>':sg(r.wDiff))+'</td><td>'+(r.cod?fmt(r.cod):'–')+'</td><td>'+fmt(r.correctOurs)+'</td><td><b>'+fmt(r.correctCarrier)+'</b></td><td>'+fmt(r.cr)+'</td><td><b>'+sg(r.rateErr)+'</b></td><td>'+(r.wCost&&r.wCost>0?'<b style="color:var(--blue)">'+sg(r.wCost)+'</b>':sg(r.wCost))+'</td><td>'+badge[r.status]+'</td></tr>').join('');
   document.getElementById('resTbl').innerHTML=h;
 }
 function exportResult(){
