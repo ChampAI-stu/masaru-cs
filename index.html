@@ -99,21 +99,25 @@
   <div class="card">
     <h2>ขั้นที่ 1 · อัปโหลดไฟล์</h2>
     <div class="map-grid">
-      <div><label>ไฟล์ฝั่งเรา (JST export) — จำเป็น</label>
-        <div id="drop_us" class="drop" onclick="document.getElementById('file_us').click()">คลิกเลือก .xlsx / .csv<br><span class="muted">บริษัทขนส่ง, หมายเลขพัสดุ, น้ำหนัก, COD</span></div>
+      <div><label>1. ไฟล์ฝั่งเรา (JST export) — จำเป็น</label>
+        <div id="drop_us" class="drop" onclick="document.getElementById('file_us').click()">คลิกเลือก .xlsx / .csv<br><span class="muted">บริษัทขนส่ง, หมายเลขพัสดุ, น้ำหนัก, COD (มีทั้ง 2 เจ้ารวมกัน)</span></div>
         <input id="file_us" type="file" accept=".xlsx,.xls,.csv" class="hide"></div>
-      <div><label>ไฟล์บิลขนส่ง (Flash / ไปรษณีย์) — ไม่บังคับ</label>
-        <div id="drop_cr" class="drop" onclick="document.getElementById('file_cr').click()">คลิกเลือก .xlsx / .csv<br><span class="muted">เลขพัสดุ + ยอดเก็บจริง (+ น้ำหนักที่ขนส่งชั่ง)</span></div>
-        <input id="file_cr" type="file" accept=".xlsx,.xls,.csv" class="hide"></div>
+      <div><label>2. บิล Flash — ไม่บังคับ</label>
+        <div id="drop_flash" class="drop" onclick="document.getElementById('file_flash').click()">คลิกเลือกบิล Flash<br><span class="muted">Tracking No. + Total charge + น้ำหนัก</span></div>
+        <input id="file_flash" type="file" accept=".xlsx,.xls,.csv" class="hide"></div>
+      <div><label>3. บิลไปรษณีย์ — ไม่บังคับ</label>
+        <div id="drop_post" class="drop" onclick="document.getElementById('file_post').click()">คลิกเลือกบิลไปรษณีย์<br><span class="muted">Barcode + ค่าบริการ + นน.(ก.)</span></div>
+        <input id="file_post" type="file" accept=".xlsx,.xls,.csv" class="hide"></div>
     </div>
-    <p class="muted" style="margin:8px 0 0">รองรับไฟล์ที่มีหัวตารางหลายบรรทัด (เช่นบิลไปรษณีย์) — ระบบหาแถวหัวตารางให้เอง</p>
+    <p class="muted" style="margin:8px 0 0">อัปได้ทั้ง 2 บิลพร้อมกัน → ระบบรวมเทียบทีเดียว เห็นภาพรวมทุกเจ้า · รองรับไฟล์หัวตารางหลายบรรทัด (บิลไปรษณีย์)</p>
   </div>
 
   <div id="mapCard" class="card hide">
     <h2>ขั้นที่ 2 · จับคู่คอลัมน์</h2>
     <h3>ไฟล์ฝั่งเรา (JST)</h3><div id="map_us" class="map-grid"></div>
-    <div id="map_cr_wrap" class="hide"><h3>ไฟล์บิลขนส่ง</h3><div id="map_cr" class="map-grid"></div>
-      <p class="muted">น้ำหนักบิล: ถ้าค่า &gt;30 ถือเป็น "กรัม" อัตโนมัติ (หาร 1000) และตัดข้อความหลัง "/" ออก</p></div>
+    <div id="map_flash_wrap" class="hide"><h3 style="color:var(--brand)">บิล Flash</h3><div id="map_flash" class="map-grid"></div></div>
+    <div id="map_post_wrap" class="hide"><h3 style="color:var(--brand)">บิลไปรษณีย์</h3><div id="map_post" class="map-grid"></div></div>
+    <p class="muted" style="margin-top:8px">น้ำหนักบิล: ถ้าค่า &gt;30 ถือเป็น "กรัม" อัตโนมัติ (หาร 1000) และตัดข้อความหลัง "/" ออก</p>
     <div class="row" style="margin-top:16px"><button class="btn navy" onclick="runAudit()">▶ ตรวจสอบ</button></div>
   </div>
 
@@ -406,7 +410,7 @@ function calcSingle(){
 }
 
 /* ===== FILE (smart header) ===== */
-let usData=null,crData=null,results=[];
+let usData=null,flashBillData=null,postBillData=null,results=[];
 function showLoading(m){document.getElementById('lmsg').textContent=m||'กำลังประมวลผล...';document.getElementById('loading').classList.remove('hide');}
 function hideLoading(){document.getElementById('loading').classList.add('hide');}
 function readFile(file,cb){const fr=new FileReader();
@@ -442,10 +446,15 @@ document.getElementById('file_us').onchange=e=>{const f=e.target.files[0];if(!f)
   showLoading('กำลังอ่านไฟล์ '+f.name+'...');
   setTimeout(()=>{try{readFile(f,(rows,h)=>{usData=rows;const d=document.getElementById('drop_us');d.classList.add('has');d.innerHTML='✓ '+f.name+' ('+rows.length+' แถว)';
     buildMap('map_us',h,FIELDS_US);document.getElementById('mapCard').classList.remove('hide');hideLoading();});}catch(err){hideLoading();alert('อ่านไฟล์ไม่สำเร็จ: '+err.message);}},60);};
-document.getElementById('file_cr').onchange=e=>{const f=e.target.files[0];if(!f)return;
+function loadBill(inputId,which){document.getElementById(inputId).onchange=e=>{const f=e.target.files[0];if(!f)return;
   showLoading('กำลังอ่านไฟล์ '+f.name+'...');
-  setTimeout(()=>{try{readFile(f,(rows,h)=>{crData=rows;const d=document.getElementById('drop_cr');d.classList.add('has');d.innerHTML='✓ '+f.name+' ('+rows.length+' แถว)';
-    document.getElementById('map_cr_wrap').classList.remove('hide');buildMap('map_cr',h,FIELDS_CR);hideLoading();});}catch(err){hideLoading();alert('อ่านไฟล์ไม่สำเร็จ: '+err.message);}},60);};
+  setTimeout(()=>{try{readFile(f,(rows,h)=>{
+    const dropId=which==='flash'?'drop_flash':'drop_post', wrapId=which==='flash'?'map_flash_wrap':'map_post_wrap', mapId=which==='flash'?'map_flash':'map_post';
+    if(which==='flash')flashBillData=rows;else postBillData=rows;
+    const d=document.getElementById(dropId);d.classList.add('has');d.innerHTML='✓ '+f.name+' ('+rows.length+' แถว)';
+    document.getElementById(wrapId).classList.remove('hide');buildMap(mapId,h,FIELDS_CR);hideLoading();
+  });}catch(err){hideLoading();alert('อ่านไฟล์ไม่สำเร็จ: '+err.message);}},60);};}
+loadBill('file_flash','flash');loadBill('file_post','post');
 const numOf=v=>{if(v==null||v==='')return NaN;const n=parseFloat(v.toString().replace(/[^0-9.\-]/g,''));return n;};
 const trk=v=>(v||'').toString().replace(/[\s\-]/g,'').toUpperCase();
 const isYes=v=>/^(1|ใช่|y|yes|true)/i.test((v||'').toString().trim());
@@ -456,20 +465,23 @@ function cWeight(v){if(v==null||v==='')return NaN;let s=v.toString();if(s.includ
 function runAudit(){
   const mu=getMap('map_us');
   if(!mu.weight||!mu.carrier){alert('กรุณาเลือกคอลัมน์ "บริษัทขนส่ง" และ "น้ำหนัก" ก่อน');return;}
-  let mc=null;
-  if(crData){mc=getMap('map_cr');
-    if(!mc.tracking||!mc.crcost){alert('ไฟล์บิล: กรุณาเลือกคอลัมน์ "หมายเลขพัสดุ" และ "ยอดเก็บจริง"');return;}}
+  let mcF=null,mcP=null;
+  if(flashBillData){mcF=getMap('map_flash');if(!mcF.tracking||!mcF.crcost){alert('บิล Flash: กรุณาเลือก "หมายเลขพัสดุ" และ "ยอดเก็บจริง"');return;}}
+  if(postBillData){mcP=getMap('map_post');if(!mcP.tracking||!mcP.crcost){alert('บิลไปรษณีย์: กรุณาเลือก "หมายเลขพัสดุ" และ "ยอดเก็บจริง"');return;}}
   showLoading('กำลังตรวจสอบ '+(usData?usData.length.toLocaleString('th-TH'):'0')+' รายการ...');
   setTimeout(()=>{
-    try{ doAudit(mu,mc); }
+    try{
+      let bill=null;
+      const add=(data,mc)=>{if(!data||!mc)return;if(!bill)bill={};data.forEach(r=>{const t=trk(r[mc.tracking]);if(t)bill[t]={cost:numOf(r[mc.crcost]),w:mc.crweight?cWeight(r[mc.crweight]):NaN};});};
+      add(flashBillData,mcF);add(postBillData,mcP);
+      doAudit(mu,bill);
+    }
     catch(e){ console.error(e); alert('เกิดข้อผิดพลาดระหว่างตรวจสอบ:\n'+(e&&e.message?e.message:e)+'\n\nลองตรวจการจับคู่คอลัมน์อีกครั้ง'); }
     finally{ _cfg=null; hideLoading(); }
   },60);
 }
-function doAudit(mu,mc){
+function doAudit(mu,bill){
   _cfg=readCfg(); const c=_cfg,tol=c.tol;
-  let bill=null;
-  if(crData&&mc){bill={};crData.forEach(r=>{const t=trk(r[mc.tracking]);if(t)bill[t]={cost:numOf(r[mc.crcost]),w:mc.crweight?cWeight(r[mc.crweight]):NaN};});}
   results=usData.map(r=>{
     const rec={carrier:r[mu.carrier],tracking:mu.tracking?r[mu.tracking]:'',ourW:numOf(r[mu.weight]),
       vol:mu.vol?numOf(r[mu.vol])||0:0,prov:mu.prov?r[mu.prov]:'',
@@ -522,7 +534,7 @@ function renderAlert(){
   const wb=results.filter(r=>r.cr!=null&&!isNaN(r.cr));
   const over=wb.filter(r=>r.status==='over'),under=wb.filter(r=>r.status==='under'),weight=wb.filter(r=>r.status==='weight');
   const err=results.filter(r=>r.status==='err');
-  const nobill=crData?results.filter(r=>r.status==='nobill'):[];
+  const nobill=(flashBillData||postBillData)?results.filter(r=>r.status==='nobill'):[];
   const s=a=>a.reduce((x,r)=>x+Math.abs(r.rateErr||0),0).toLocaleString('th-TH',{maximumFractionDigits:0});
   const wc=weight.reduce((x,r)=>x+(r.wCost||0),0).toLocaleString('th-TH',{maximumFractionDigits:0});
   const p=[];
