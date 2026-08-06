@@ -193,7 +193,7 @@
     </div>
     <h3>ทั่วไป</h3>
     <div class="grid">
-      <div><label>ค่าคลาดเคลื่อน (฿) — กันปัดเศษ</label><input id="cfg_tol" type="number" step="0.5" value="1"></div>
+      <div><label>ค่าคลาดเคลื่อน (฿) — กันปัดเศษ</label><input id="cfg_tol" type="number" step="0.5" value="0"></div>
       <div><label>ขนส่งเริ่มต้น</label><select id="cfg_defcar"><option value="flash">Flash</option><option value="post">ไปรษณีย์</option></select></div>
       <div><label>จังหวัด/คำ = โซน BKK (Flash)</label><input id="cfg_bkk" value="กรุงเทพ,กทม,bangkok"></div>
     </div>
@@ -326,7 +326,7 @@
       <tr><td>ไปรษณีย์ +ค่าบริการ</td><td>2฿</td><td>บวกทุกชิ้น (สัญญาข้อ 7)</td></tr>
       <tr><td>ไปรษณีย์ พื้นที่พิเศษ</td><td>20฿</td><td>ปลายทางพื้นที่พิเศษ</td></tr>
       <tr><td>ไปรษณีย์ COD รวมในบิล</td><td>ไม่รวม</td><td>ค่าบริการไปรษณีย์ไม่รวม COD (แยกรอบโอน)</td></tr>
-      <tr><td>ค่าคลาดเคลื่อน</td><td>1฿</td><td>ต่างไม่เกินนี้ = ถือว่าตรง (กันปัดเศษ .5 ของ Flash)</td></tr>
+      <tr><td>ค่าคลาดเคลื่อน</td><td>0฿</td><td>ต่างไม่เกินนี้ = ถือว่าตรง · ตั้ง 0 = จับทุกบาท (การปัดเศษ .5 ของ Flash จะขึ้น "เก็บเกิน" ด้วย) · ตั้ง 1 = ยอมให้ปัดเศษ</td></tr>
     </table>
   </div>
 
