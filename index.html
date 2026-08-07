@@ -136,7 +136,7 @@ async function doSignup(){
   $('signupBtn').disabled=false;$('signupBtn').textContent='สมัครสมาชิก';
   if(error){serr('สมัครไม่สำเร็จ: '+error.message);return;}
   $('signupOk').textContent='🎉 สมัครสำเร็จ! กด "เข้าสู่ระบบ" ได้เลย';$('signupOk').classList.remove('hide');
-}
+} 
 $('loginBtn').onclick=doLogin;
 $('password').addEventListener('keypress',ev=>{if(ev.key==='Enter')doLogin();});
 $('signupBtn').onclick=doSignup;
