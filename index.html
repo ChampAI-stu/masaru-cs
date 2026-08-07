@@ -88,6 +88,7 @@
 <div class="tabs">
   <button class="tab-btn active" data-tab="batch">📊 ตรวจสอบชุด</button>
   <button class="tab-btn" data-tab="dash">📈 ยอดรวม</button>
+  <button class="tab-btn" data-tab="history">📁 ประวัติ</button>
   <button class="tab-btn" data-tab="single">🧮 คำนวณเดี่ยว</button>
   <button class="tab-btn" data-tab="rate">📋 ตารางเรท (แก้ได้)</button>
   <button class="tab-btn" data-tab="settings">⚙️ ตั้งค่า</button>
@@ -128,6 +129,7 @@
     <div class="kpi-grid" id="kpis"></div>
     <div class="row" style="margin:14px 0">
       <button class="btn gold" onclick="exportResult()">⬇ Export Excel</button>
+      <button class="btn navy" onclick="saveAudit()">💾 เซฟผลตรวจ</button>
       <select id="flt" onchange="renderTable()">
         <option value="all">ทั้งหมด</option><option value="prob">เฉพาะที่ผิด</option>
         <option value="over">เก็บเกิน (เรท)</option><option value="under">เก็บขาด (เรท)</option>
@@ -146,6 +148,13 @@
   <div class="card"><h2>ยอดรวม · เสียเปรียบค่าขนส่งเท่าไหร่</h2>
     <div id="dashBody"><p class="muted">ยังไม่มีข้อมูล — ไปแท็บ "📊 ตรวจสอบชุด" อัปไฟล์ JST + บิลขนส่ง แล้วกดตรวจสอบก่อน</p></div>
     <p class="muted" style="margin-top:12px">* หน้านี้แสดง "จ่ายเกินจากที่ควรเป็น" (เงินรั่ว/เสียเปรียบ) ไม่ใช่กำไรจริง เพราะเราไม่มีข้อมูลค่าส่งที่เก็บจากลูกค้า</p>
+  </div>
+</div>
+
+<div id="tab-history" class="hide">
+  <div class="card"><h2>ประวัติการตรวจสอบ</h2>
+    <p class="muted" style="margin:0 0 10px">กด"เปิด" เพื่อดูตารางเทียบ + Dashboard ของรอบนั้น · เก็บไว้ในเบราว์เซอร์นี้</p>
+    <div id="histBody"><p class="muted">ยังไม่มีประวัติ — ไปแท็บ "📊 ตรวจสอบชุด" กดตรวจสอบ แล้วกด "💾 เซฟผลตรวจ"</p></div>
   </div>
 </div>
 
@@ -571,6 +580,59 @@ function renderKPI(){
     '<div class="kpi" style="background:#6b4fa3"><div class="n">'+special.length+'</div><div class="l">พื้นที่พิเศษ</div></div>'
     :'<div class="kpi weight"><div class="n">—</div><div class="l">ยังไม่อัปบิล (เห็นเรทที่ควรเป็นก่อน)</div></div>');
 }
+/* ===== ประวัติ (เก็บใน localStorage) ===== */
+const HKEY='masaru_audit_history_v1';
+function loadHist(){try{return JSON.parse(localStorage.getItem(HKEY)||'[]');}catch(e){return[];}}
+function saveHist(arr){
+  try{localStorage.setItem(HKEY,JSON.stringify(arr));return true;}
+  catch(e){while(arr.length>1){arr.pop();try{localStorage.setItem(HKEY,JSON.stringify(arr));return 'trimmed';}catch(_){}}return false;}
+}
+function computeSummary(res){
+  const m=res.filter(r=>r.cr!=null&&!isNaN(r.cr)&&r.correctOurs!=null&&r.status!=='zero');
+  const S=(a,f)=>a.reduce((s,r)=>s+(f(r)||0),0);
+  const over=m.filter(r=>r.status==='over'),under=m.filter(r=>r.status==='under'),special=m.filter(r=>r.status==='special');
+  const paid=S(m,r=>r.cr),shouldOurs=S(m,r=>r.correctOurs);
+  return{n:res.length,matched:m.length,paid,shouldOurs,net:paid-shouldOurs,
+    overN:over.length,overSum:S(over,r=>r.rateErr),underN:under.length,underSum:S(under,r=>r.rateErr),
+    weightN:m.filter(r=>Math.abs(r.wCost||0)>0.001).length,weightSum:S(m,r=>r.wCost),specialN:special.length};
+}
+function saveAudit(){
+  if(!results.length){alert('ยังไม่มีผลตรวจสอบ — กดตรวจสอบก่อน');return;}
+  const def='ตรวจ '+new Date().toLocaleDateString('th-TH');
+  const note=prompt('ตั้งชื่อ/บันทึกช่วยจำ (เช่น รอบบิล 5 ส.ค.):',def);if(note===null)return;
+  const entry={id:Date.now(),date:new Date().toISOString(),note:note||def,
+    files:{flash:!!flashBillData,post:!!postBillData},sm:computeSummary(results),results:results};
+  let arr=loadHist();arr.unshift(entry);let r=saveHist(arr);
+  if(!r){entry.results=null;entry.summaryOnly=true;arr=loadHist();arr.unshift(entry);r=saveHist(arr);
+    alert(r?'บันทึกแล้ว — แต่ข้อมูลใหญ่เกิน เก็บเฉพาะสรุป (เปิดดูตารางเต็มไม่ได้)':'บันทึกไม่สำเร็จ: พื้นที่เต็ม ลองลบประวัติเก่า');}
+  else alert(r==='trimmed'?'บันทึกแล้ว ✓ (ลบประวัติเก่าสุดออกเพราะพื้นที่ใกล้เต็ม)':'บันทึกประวัติแล้ว ✓');
+  renderHistory();
+}
+function renderHistory(){
+  const el=document.getElementById('histBody');if(!el)return;const arr=loadHist();
+  if(!arr.length){el.innerHTML='<p class="muted">ยังไม่มีประวัติ — ไปแท็บ "📊 ตรวจสอบชุด" กดตรวจสอบ แล้วกด "💾 เซฟผลตรวจ"</p>';return;}
+  const B=v=>'฿'+(Math.round(v*100)/100).toLocaleString('th-TH',{maximumFractionDigits:0});
+  let h='<div class="tbl-scroll" style="max-height:520px"><table><tr><th>วันที่/เวลา</th><th>บันทึก</th><th>พัสดุ</th><th>จ่ายเกินสุทธิ</th><th>เก็บเกิน</th><th>นน.เกิน</th><th></th></tr>';
+  arr.forEach(e=>{const s=e.sm||{};const d=new Date(e.date).toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'});
+    h+='<tr><td>'+d+'</td><td style="text-align:left">'+e.note+(e.summaryOnly?' <span class="muted">(สรุปเท่านั้น)</span>':'')+'</td><td>'+(s.n||0).toLocaleString('th-TH')+'</td>'+
+    '<td style="color:'+(s.net>0.5?'var(--red)':s.net<-0.5?'var(--green)':'var(--ink)')+';font-weight:700">'+(s.net>0?'+':'')+B(s.net||0)+'</td>'+
+    '<td style="color:var(--red)">'+(s.overN||0)+' · '+B(s.overSum||0)+'</td>'+
+    '<td style="color:var(--blue)">'+(s.weightN||0)+' · '+B(s.weightSum||0)+'</td>'+
+    '<td style="white-space:nowrap">'+(e.results?'<button class="btn sm" onclick="openHist('+e.id+')">เปิด</button> ':'')+'<button class="btn sm ghost" onclick="delHist('+e.id+')" style="color:var(--red);border-color:var(--red)">ลบ</button></td></tr>';});
+  el.innerHTML=h+'</table></div>';
+}
+function openHist(id){
+  const e=loadHist().find(x=>x.id===id);if(!e||!e.results){alert('ประวัตินี้เก็บเฉพาะสรุป ไม่มีตารางเต็ม');return;}
+  results=e.results;renderKPI();renderTable();renderAlert();renderDashboard();
+  document.getElementById('resultCard').classList.remove('hide');
+  document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));
+  const bt=document.querySelector('.tab-btn[data-tab="batch"]');if(bt)bt.classList.add('active');
+  ['batch','dash','single','rate','settings','help','history'].forEach(t=>document.getElementById('tab-'+t).classList.add('hide'));
+  document.getElementById('tab-batch').classList.remove('hide');
+  document.getElementById('resultCard').scrollIntoView({behavior:'smooth'});
+}
+function delHist(id){if(!confirm('ลบประวัตินี้?'))return;saveHist(loadHist().filter(x=>x.id!==id));renderHistory();}
+
 function renderDashboard(){
   const el=document.getElementById('dashBody');if(!el)return;
   const matched=results.filter(r=>r.cr!=null&&!isNaN(r.cr)&&r.correctOurs!=null&&!['zero','skip','nobill','err'].includes(r.status));
@@ -813,8 +875,9 @@ function closeEdit(keep){
 /* ===== TABS ===== */
 document.querySelectorAll('.tab-btn').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');
-  ['batch','dash','single','rate','settings','help'].forEach(t=>document.getElementById('tab-'+t).classList.add('hide'));
-  document.getElementById('tab-'+b.dataset.tab).classList.remove('hide');});
+  ['batch','dash','single','rate','settings','help','history'].forEach(t=>document.getElementById('tab-'+t).classList.add('hide'));
+  document.getElementById('tab-'+b.dataset.tab).classList.remove('hide');
+  if(b.dataset.tab==='history')renderHistory();});
 renderFlashEdit();renderPostEdit();
 </script>
 </body>
