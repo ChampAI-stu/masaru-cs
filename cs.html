@@ -372,7 +372,7 @@
       <li>Flash เพิ่ม/ลบแถวได้ (ปุ่ม + เพิ่มแถว / 🗑 ในป๊อปอัพ) · แถว ">20kg" ของไปรษณีย์คือฐานเริ่ม + บวกต่อ kg</li>
       <li>ปุ่ม <b>"รีเซ็ตค่าเริ่มต้น"</b> คืนค่าเดิมทั้งตาราง (มีถามยืนยัน)</li>
     </ol>
-    <p class="muted" style="margin:0">ค่าที่แก้มีผลกับการคำนวณทันที (แต่ไม่ถูกบันทึกถาวร — โหลดหน้าใหม่จะกลับเป็นค่าเริ่มต้น)</p>
+    <p class="muted" style="margin:0">ค่าที่แก้มีผลกับการคำนวณทันที และ<b>ถูกบันทึกไว้ในเบราว์เซอร์เครื่องนี้อัตโนมัติ</b> (โหลดหน้าใหม่ค่าเดิมยังอยู่ · เปลี่ยนเครื่อง/เบราว์เซอร์ต้องตั้งใหม่ · กด "รีเซ็ต" เพื่อกลับค่าเริ่มต้น)</p>
   </div>
 
   <div class="card"><h2>ค่าที่ตั้งไว้ (แท็บ ⚙️ ตั้งค่า)</h2>
@@ -425,6 +425,36 @@ const POST_DEFAULT=[[1,20],[2,30],[3,40],[4,50],[5,60],[6,70],[7,80],[8,90],[9,1
 let flashRates=FLASH_DEFAULT.map(r=>r.slice());
 let postRates=POST_DEFAULT.map(r=>r.slice());
 let postOver={base:160,perkg:15};
+
+/* ===== PERSIST RATES (localStorage) ===== */
+const RATE_LS_KEY='masaru_cs_rates_v1', CFG_LS_KEY='masaru_cs_cfg_v1';
+function saveRates(){
+  try{localStorage.setItem(RATE_LS_KEY,JSON.stringify({flashRates,postRates,postOver}));}catch(e){}
+}
+function loadRates(){
+  try{
+    const raw=localStorage.getItem(RATE_LS_KEY);if(!raw)return;
+    const d=JSON.parse(raw);
+    const okRows=(a,len)=>Array.isArray(a)&&a.length>0&&a.every(r=>Array.isArray(r)&&r.length===len&&r.every(n=>typeof n==='number'&&isFinite(n)));
+    if(okRows(d.flashRates,3))flashRates=d.flashRates;
+    if(okRows(d.postRates,2))postRates=d.postRates;
+    if(d.postOver&&isFinite(+d.postOver.base)&&isFinite(+d.postOver.perkg))postOver={base:+d.postOver.base,perkg:+d.postOver.perkg};
+  }catch(e){}
+}
+function saveCfgLS(){
+  try{
+    const o={};document.querySelectorAll('[id^="cfg_"]').forEach(el=>o[el.id]=el.value);
+    localStorage.setItem(CFG_LS_KEY,JSON.stringify(o));
+  }catch(e){}
+}
+function loadCfgLS(){
+  try{
+    const raw=localStorage.getItem(CFG_LS_KEY);if(!raw)return;
+    const o=JSON.parse(raw);
+    Object.keys(o).forEach(id=>{const el=document.getElementById(id);if(el)el.value=o[id];});
+    _cfg=null;
+  }catch(e){}
+}
 
 /* ===== SETTINGS ===== */
 let _cfg=null;
@@ -638,16 +668,11 @@ function computeSummary(res){
 async function saveAudit(){
   if(!results.length){alert('ยังไม่มีผลตรวจสอบ — กดตรวจสอบก่อน');return;}
   const c=sbClient();if(!c){alert('เชื่อมต่อ Supabase ไม่ได้ (ตรวจอินเทอร์เน็ต)');return;}
-  const t=new Date();const dd=String(t.getDate()).padStart(2,'0')+'/'+String(t.getMonth()+1).padStart(2,'0')+'/'+t.getFullYear();
-  const dataDate=prompt('ข้อมูลชุดนี้เป็นของวันที่? (เช่น '+dd+')','');
-  if(dataDate===null)return;
-  if(!dataDate.trim()){alert('กรุณาระบุวันที่ของข้อมูล');return;}
-  const def='ค่าส่ง '+dataDate.trim();
-  const note=prompt('บันทึกช่วยจำ (ไม่ใส่ก็ได้):',def);if(note===null)return;
-  const sm=computeSummary(results);sm.dataDate=dataDate.trim();
+  const def='ตรวจ '+new Date().toLocaleDateString('th-TH');
+  const note=prompt('ตั้งชื่อ/บันทึกช่วยจำ (เช่น รอบบิล 5 ส.ค.):',def);if(note===null)return;
   showLoading('กำลังบันทึกขึ้น cloud...');
   try{
-    const {error}=await c.from('audit_history').insert({id:Date.now(),note:note||def,summary:sm,results:results});
+    const {error}=await c.from('audit_history').insert({id:Date.now(),note:note||def,summary:computeSummary(results),results:results});
     if(error)throw error;
     hideLoading();alert('บันทึกประวัติขึ้น cloud แล้ว ✓');renderHistory();
   }catch(e){hideLoading();alert('บันทึกไม่สำเร็จ: '+(e.message||e)+'\n\n(เช็คว่ารัน SQL สร้างตาราง audit_history + policy แล้ว)');}
@@ -661,9 +686,9 @@ async function renderHistory(){
     if(error)throw error;
     if(!data||!data.length){el.innerHTML='<p class="muted">ยังไม่มีประวัติ — ไปแท็บ "📊 ตรวจสอบชุด" กดตรวจสอบ แล้วกด "💾 เซฟผลตรวจ"</p>';return;}
     const B=v=>'฿'+(Math.round((v||0)*100)/100).toLocaleString('th-TH',{maximumFractionDigits:0});
-    let h='<div class="tbl-scroll" style="max-height:520px"><table><tr><th>วันที่ข้อมูล</th><th>เซฟเมื่อ</th><th>บันทึก</th><th>พัสดุ</th><th>จ่ายเกินสุทธิ</th><th>เก็บเกิน</th><th>นน.เกิน</th><th></th></tr>';
+    let h='<div class="tbl-scroll" style="max-height:520px"><table><tr><th>วันที่/เวลา</th><th>บันทึก</th><th>พัสดุ</th><th>จ่ายเกินสุทธิ</th><th>เก็บเกิน</th><th>นน.เกิน</th><th></th></tr>';
     data.forEach(e=>{const s=e.summary||{};const d=new Date(e.created_at).toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short'});
-      h+='<tr><td style="font-weight:700;color:var(--navy)">'+(s.dataDate||'—')+'</td><td style="font-size:12px;color:var(--muted)">'+d+'</td><td style="text-align:left">'+(e.note||'')+'</td><td>'+(s.n||0).toLocaleString('th-TH')+'</td>'+
+      h+='<tr><td>'+d+'</td><td style="text-align:left">'+(e.note||'')+'</td><td>'+(s.n||0).toLocaleString('th-TH')+'</td>'+
       '<td style="color:'+(s.net>0.5?'var(--red)':s.net<-0.5?'var(--green)':'var(--ink)')+';font-weight:700">'+(s.net>0?'+':'')+B(s.net)+'</td>'+
       '<td style="color:var(--red)">'+(s.overN||0)+' · '+B(s.overSum)+'</td>'+
       '<td style="color:var(--blue)">'+(s.weightN||0)+' · '+B(s.weightSum)+'</td>'+
@@ -883,8 +908,8 @@ function renderPostEdit(){
      '<td><button class="pencil" onclick="openEdit(\'postover\',0)">✏️</button></td></tr>';
   document.getElementById('postTbl').innerHTML=h;}
 function addFlashRow(){const l=flashRates[flashRates.length-1];flashRates.push([l[0]+1,l[1],l[2]]);renderFlashEdit();openEdit('flash',flashRates.length-1,true);}
-function resetFlash(){if(confirm('รีเซ็ตเรท Flash กลับค่าเริ่มต้นทั้งหมด?')){flashRates=FLASH_DEFAULT.map(r=>r.slice());renderFlashEdit();}}
-function resetPost(){if(confirm('รีเซ็ตเรทไปรษณีย์กลับค่าเริ่มต้นทั้งหมด?')){postRates=POST_DEFAULT.map(r=>r.slice());postOver={base:160,perkg:15};renderPostEdit();}}
+function resetFlash(){if(confirm('รีเซ็ตเรท Flash กลับค่าเริ่มต้นทั้งหมด?')){flashRates=FLASH_DEFAULT.map(r=>r.slice());saveRates();renderFlashEdit();}}
+function resetPost(){if(confirm('รีเซ็ตเรทไปรษณีย์กลับค่าเริ่มต้นทั้งหมด?')){postRates=POST_DEFAULT.map(r=>r.slice());postOver={base:160,perkg:15};saveRates();renderPostEdit();}}
 
 /* ===== EDIT MODAL (ดินสอ + ยืนยัน) ===== */
 let editTarget={table:null,index:null,isNew:false};
@@ -918,6 +943,7 @@ function confirmEdit(){
   else if(table==='post')postRates[index]=vals;
   else if(table==='postover'){postOver.base=vals[0];postOver.perkg=vals[1];}
   editTarget.isNew=false;
+  saveRates();
   closeEdit(true);
   table==='flash'?renderFlashEdit():renderPostEdit();
 }
@@ -925,7 +951,7 @@ function deleteEditRow(){
   const {table,index}=editTarget;
   if(table!=='flash'){closeEdit(true);return;}
   if(flashRates.length<=1){alert('ต้องมีอย่างน้อย 1 แถว');return;}
-  if(confirm('ลบแถว '+(index+1)+' ออกจากตารางเรท Flash?')){flashRates.splice(index,1);closeEdit(true);renderFlashEdit();}
+  if(confirm('ลบแถว '+(index+1)+' ออกจากตารางเรท Flash?')){flashRates.splice(index,1);saveRates();closeEdit(true);renderFlashEdit();}
 }
 function closeEdit(keep){
   if(!keep&&editTarget.isNew&&editTarget.table==='flash'){flashRates.splice(editTarget.index,1);renderFlashEdit();}
@@ -939,6 +965,8 @@ document.querySelectorAll('.tab-btn').forEach(b=>b.onclick=()=>{
   ['batch','dash','single','rate','settings','help','history'].forEach(t=>document.getElementById('tab-'+t).classList.add('hide'));
   document.getElementById('tab-'+b.dataset.tab).classList.remove('hide');
   if(b.dataset.tab==='history')renderHistory();});
+loadRates();loadCfgLS();
+document.querySelectorAll('[id^="cfg_"]').forEach(el=>el.addEventListener('change',()=>{_cfg=null;saveCfgLS();}));
 renderFlashEdit();renderPostEdit();
 
 /* ===== LOGIN (Supabase Auth — cs-ia) ===== */
