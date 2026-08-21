@@ -252,7 +252,6 @@
     <h3>ทั่วไป</h3>
     <div class="grid">
       <div><label>ค่าคลาดเคลื่อน (฿) — กันปัดเศษ</label><input id="cfg_tol" type="number" step="0.5" value="0"></div>
-      <div><label>ขนส่งเริ่มต้น</label><select id="cfg_defcar"><option value="flash">Flash</option><option value="post">ไปรษณีย์</option></select></div>
       <div><label>จังหวัด/คำ = โซน BKK (Flash)</label><input id="cfg_bkk" value="กรุงเทพ,กทม,bangkok"></div>
     </div>
   </div>
@@ -472,7 +471,6 @@ function readCfg(){return{
   poBase:postOver.base,
   poPerkg:postOver.perkg,
   tol:+document.getElementById('cfg_tol').value||0,
-  defcar:document.getElementById('cfg_defcar').value,
   bkk:document.getElementById('cfg_bkk').value.split(',').map(x=>x.trim().toLowerCase()).filter(Boolean)
 };}
 function destOf(prov){const s=(prov||'').toString().toLowerCase();return cfg().bkk.some(b=>s.includes(b))?'BKK':'UPC';}
@@ -500,7 +498,8 @@ function postBase(weight){
   return{rate:postRates[idx][1],basis:'ฐาน '+postRates[idx][1]};
 }
 function correctRate(rec){
-  const c=cfg(),car=normCar(rec.carrier)||c.defcar;
+  const c=cfg(),car=normCar(rec.carrier);
+  if(!car)return{car:'unknown',unknown:true,rate:null,basis:'อ่านชื่อขนส่งไม่ออก'+(rec.carrier?' ("'+rec.carrier+'")':' (ช่องว่าง)')};
   if(car==='pickup')return{car:'pickup',skip:true,rate:0,basis:'รับเอง'};
   const cod=(rec.codFlag&&rec.codAmount>0)?rec.codAmount:0;
   if(car==='flash'){
@@ -616,6 +615,7 @@ function doAudit(mu,bill){
       wDiff:(!isNaN(carrierW)?Math.round((carrierW-rec.ourW)*100)/100:null),
       cod:rec.codFlag?rec.codAmount:0,correctOurs:cByOurs.rate,correctCarrier:cByCarrier.rate,basis:cByCarrier.basis,
       cr:carrierCharge,rateErr:null,wCost:null,status:'nobill'};
+    if(cByCarrier.unknown){out.status='unknowncar';return out;}
     if(cByCarrier.skip){out.status='skip';return out;}
     if(cByCarrier.rate==null){out.status='err';return out;}
     if(!isNaN(carrierW)&&cByOurs.rate!=null)out.wCost=Math.round((cByCarrier.rate-cByOurs.rate)*100)/100;
@@ -784,8 +784,8 @@ function renderAlert(){
   else{box.className='';box.innerHTML='';}
 }
 function jumpTo(f){document.getElementById('flt').value=f;renderTable();document.getElementById('resTbl').scrollIntoView({behavior:'smooth',block:'start'});}
-const cls={ok:'ok',over:'over',under:'under',weight:'weight',special:'special',err:'err',skip:'skip',nobill:'nobill',zero:'skip'};
-const badge={ok:'🟩 ตรง',over:'🟥 เก็บเกิน',under:'🟧 เก็บขาด',weight:'🟦 นน.ชั่งเกิน',special:'🟪 พื้นที่พิเศษ',err:'⬜ คำนวณไม่ได้',skip:'⬜ รับเอง',nobill:'⬜ ยังไม่มีบิล',zero:'⬜ ยอดเก็บ 0 (ตรวจ)'};
+const cls={ok:'ok',over:'over',under:'under',weight:'weight',special:'special',err:'err',skip:'skip',nobill:'nobill',zero:'skip',unknowncar:'err'};
+const badge={ok:'🟩 ตรง',over:'🟥 เก็บเกิน',under:'🟧 เก็บขาด',weight:'🟦 นน.ชั่งเกิน',special:'🟪 พื้นที่พิเศษ',err:'⬜ คำนวณไม่ได้',skip:'⬜ รับเอง',nobill:'⬜ ยังไม่มีบิล',zero:'⬜ ยอดเก็บ 0 (ตรวจ)',unknowncar:'❓ อ่านขนส่งไม่ออก'};
 function renderTable(){
   const f=document.getElementById('flt').value;let rows=results;
   if(f==='prob')rows=results.filter(r=>r.status==='over'||r.status==='under'||(r.correctOurs!=null&&r.status!=='zero'&&Math.abs(r.wCost||0)>0.001));
@@ -795,19 +795,19 @@ function renderTable(){
   const fmt=v=>v==null||isNaN(v)?'–':(+v).toLocaleString('th-TH',{maximumFractionDigits:2});
   const sg=v=>v==null?'–':(v>0?'+':'')+fmt(v);
   let h='<tr><th>เลขพัสดุ</th><th>ขนส่ง</th><th>นน.เรา<br>(บันทึก)</th><th>นน.ขนส่ง<br>(ชั่งจริง)</th><th>Δนน.</th><th>COD</th><th>เรทของเรา<br>(จากนน.เรา)</th><th>เรทควรเป็น<br>(จากนน.ขนส่ง)</th><th>💰 เราจ่ายจริง</th><th>ต่าง(เรท)</th><th>ส่วนเกินจากนน.</th><th>สถานะ</th></tr>';
-  h+=rows.slice(0,4000).map(r=>'<tr class="'+cls[r.status]+'"><td>'+(r.tracking||'–')+'</td><td>'+(r.carrier==='flash'?'Flash':r.carrier==='post'?'ปณ':'รับเอง')+'</td><td>'+fmt(r.ourW)+'</td><td>'+fmt(r.carrierW)+'</td><td>'+(r.wDiff!=null&&r.wDiff>0?'<b style="color:var(--red)">'+sg(r.wDiff)+'</b>':sg(r.wDiff))+'</td><td>'+(r.cod?fmt(r.cod):'–')+'</td><td>'+fmt(r.correctOurs)+'</td><td><b>'+fmt(r.correctCarrier)+'</b></td><td>'+fmt(r.cr)+'</td><td><b>'+sg(r.rateErr)+'</b></td><td>'+(r.wCost&&r.wCost>0?'<b style="color:var(--blue)">'+sg(r.wCost)+'</b>':sg(r.wCost))+'</td><td>'+badge[r.status]+'</td></tr>').join('');
+  h+=rows.slice(0,4000).map(r=>'<tr class="'+cls[r.status]+'"><td>'+(r.tracking||'–')+'</td><td>'+(r.carrier==='flash'?'Flash':r.carrier==='post'?'ปณ':r.carrier==='unknown'?'❓':'รับเอง')+'</td><td>'+fmt(r.ourW)+'</td><td>'+fmt(r.carrierW)+'</td><td>'+(r.wDiff!=null&&r.wDiff>0?'<b style="color:var(--red)">'+sg(r.wDiff)+'</b>':sg(r.wDiff))+'</td><td>'+(r.cod?fmt(r.cod):'–')+'</td><td>'+fmt(r.correctOurs)+'</td><td><b>'+fmt(r.correctCarrier)+'</b></td><td>'+fmt(r.cr)+'</td><td><b>'+sg(r.rateErr)+'</b></td><td>'+(r.wCost&&r.wCost>0?'<b style="color:var(--blue)">'+sg(r.wCost)+'</b>':sg(r.wCost))+'</td><td>'+badge[r.status]+'</td></tr>').join('');
   document.getElementById('resTbl').innerHTML=h;
 }
 const ST_EXPORT={
   ok:['ตรง','E2EFDA','1E7145'],over:['เก็บเกิน','FCE4EC','C00000'],under:['เก็บขาด','FFF3CC','7A5C00'],
   weight:['นน.ชั่งเกิน','D6E4F0','1F3864'],special:['พื้นที่พิเศษ','E9E2F5','5B3E8E'],
   zero:['ยอดเก็บ 0','F0F0F0','666666'],nobill:['ยังไม่มีบิล','F5F5F5','888888'],
-  skip:['รับเอง','F5F5F5','888888'],err:['คำนวณไม่ได้','EEEEEE','888888']};
+  skip:['รับเอง','F5F5F5','888888'],err:['คำนวณไม่ได้','EEEEEE','888888'],unknowncar:['อ่านขนส่งไม่ออก','FDE9D9','9C4500']};
 const XB={top:{style:'thin',color:{rgb:'D9D9D9'}},bottom:{style:'thin',color:{rgb:'D9D9D9'}},left:{style:'thin',color:{rgb:'D9D9D9'}},right:{style:'thin',color:{rgb:'D9D9D9'}}};
 function styleHeader(ws,ncol){for(let C=0;C<ncol;C++){const a=XLSX.utils.encode_cell({r:0,c:C});if(ws[a])ws[a].s={fill:{fgColor:{rgb:'1F3864'}},font:{color:{rgb:'FFFFFF'},bold:true,sz:11},alignment:{horizontal:'center',vertical:'center',wrapText:true},border:XB};}}
 function buildAuditSheet(rows){
   const num=v=>(v==null||isNaN(v))?'':+v;
-  const carLabel=c=>c==='flash'?'Flash':c==='post'?'ไปรษณีย์':'รับเอง';
+  const carLabel=c=>c==='flash'?'Flash':c==='post'?'ไปรษณีย์':c==='unknown'?'อ่านไม่ออก':'รับเอง';
   const headers=['เลขพัสดุ','ขนส่ง','นน.เรา','นน.ขนส่ง','Δนน.','COD','เรทของเรา','เรทควรเป็น','เราจ่ายจริง','ต่าง(เรท)','ส่วนเกินจากนน.','สถานะ','คิดจาก'];
   const aoa=[headers];
   rows.forEach(r=>aoa.push([r.tracking||'',carLabel(r.carrier),num(r.ourW),num(r.carrierW),num(r.wDiff),num(r.cod),
@@ -872,7 +872,8 @@ function exportResult(){
     ['ตรง',matched.filter(r=>r.status==='ok').length,'','ok'],
     ['ยอดเก็บ 0 (ยกเลิก/ตีกลับ)',results.filter(r=>r.status==='zero').length,'','zero'],
     ['ยังไม่มีบิล',results.filter(r=>r.status==='nobill').length,'','nobill'],
-    ['รับเอง',results.filter(r=>r.status==='skip').length,'','skip']];
+    ['รับเอง',results.filter(r=>r.status==='skip').length,'','skip'],
+    ['❓ อ่านขนส่งไม่ออก',results.filter(r=>r.status==='unknowncar').length,'','unknowncar']];
   const sums=XLSX.utils.aoa_to_sheet(S.map(r=>r.slice(0,3)));
   sums['!cols']=[{wch:46},{wch:12},{wch:15}];
   styleHeader(sums,3);
