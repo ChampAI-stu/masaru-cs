@@ -549,6 +549,9 @@ const FIELDS_US=[
   {k:'codFlag',label:'COD (ใช่/ไม่)',guess:['cod (เก็บเงินปลายทาง)','cod']},
   {k:'codAmount',label:'ยอด COD (฿)',guess:['จำนวนเงินทั้งหมด','ยอดที่ชำระ','จำนวนเงิน']},
   {k:'prov',label:'ที่อยู่/จังหวัด',guess:['ที่อยู่ผู้รับ','จังหวัด']},
+  {k:'order',label:'เลขออเดอร์ (ไม่บังคับ)',guess:['เลขที่ออเดอร์','หมายเลขคำสั่งซื้อ','เลขออเดอร์','order no','order id','ออเดอร์']},
+  {k:'sku',label:'SKU (ไม่บังคับ)',guess:['sku','รหัสสินค้า','รหัส sku','item sku','product code','บาร์โค้ดสินค้า']},
+  {k:'skuQty',label:'จำนวน/ชิ้น (ไม่บังคับ)',guess:['จำนวน','qty','quantity','จำนวนสินค้า']},
 ];
 const FIELDS_CR=[
   {k:'tracking',label:'หมายเลขพัสดุ (join)',guess:['tracking no','barcode','หมายเลขพัสดุ','tracking','พัสดุ']},
@@ -602,16 +605,31 @@ function runAudit(){
 }
 function doAudit(mu,bill){
   _cfg=readCfg(); const c=_cfg,tol=c.tol;
+  /* รวม SKU ทุกแถวที่เป็นเลขพัสดุเดียวกัน (กรณี JST export แยกบรรทัดต่อสินค้า) */
+  const skuByTrk={};
+  if(mu.sku&&mu.tracking){
+    usData.forEach(r=>{
+      const k=trk(r[mu.tracking]);if(!k)return;
+      const s=(r[mu.sku]||'').toString().trim();if(!s)return;
+      const q=mu.skuQty?numOf(r[mu.skuQty]):NaN;
+      const lbl=s+(!isNaN(q)&&q>1?' x'+q:'');
+      (skuByTrk[k]=skuByTrk[k]||[]);
+      if(!skuByTrk[k].includes(lbl))skuByTrk[k].push(lbl);
+    });
+  }
   results=usData.map(r=>{
     const rec={carrier:r[mu.carrier],tracking:mu.tracking?r[mu.tracking]:'',ourW:numOf(r[mu.weight]),
       vol:mu.vol?numOf(r[mu.vol])||0:0,prov:mu.prov?r[mu.prov]:'',
       codFlag:mu.codFlag?isYes(r[mu.codFlag]):false,codAmount:mu.codAmount?numOf(r[mu.codAmount])||0:0,special:false};
+    const tk=trk(rec.tracking);
+    const skuList=(skuByTrk[tk]&&skuByTrk[tk].length)?skuByTrk[tk]:(mu.sku&&r[mu.sku]?[String(r[mu.sku]).trim()]:[]);
+    const orderNo=mu.order?(r[mu.order]||''):'';
     const b=bill?bill[trk(rec.tracking)]:null;
     const carrierCharge=b?b.cost:NaN, carrierW=(b&&b.w>0)?b.w:NaN;
     const useW=!isNaN(carrierW)?carrierW:rec.ourW;
     const cByCarrier=correctRate({...rec,weight:useW});
     const cByOurs=correctRate({...rec,weight:rec.ourW});
-    const out={tracking:rec.tracking,carrier:cByCarrier.car,ourW:rec.ourW,carrierW,
+    const out={tracking:rec.tracking,order:orderNo,sku:skuList.join(', '),skuCount:skuList.length,carrier:cByCarrier.car,ourW:rec.ourW,carrierW,
       wDiff:(!isNaN(carrierW)?Math.round((carrierW-rec.ourW)*100)/100:null),
       cod:rec.codFlag?rec.codAmount:0,correctOurs:cByOurs.rate,correctCarrier:cByCarrier.rate,basis:cByCarrier.basis,
       cr:carrierCharge,rateErr:null,wCost:null,status:'nobill'};
@@ -794,8 +812,10 @@ function renderTable(){
   document.getElementById('cntInfo').textContent='แสดง '+rows.length+' / '+results.length;
   const fmt=v=>v==null||isNaN(v)?'–':(+v).toLocaleString('th-TH',{maximumFractionDigits:2});
   const sg=v=>v==null?'–':(v>0?'+':'')+fmt(v);
-  let h='<tr><th>เลขพัสดุ</th><th>ขนส่ง</th><th>นน.เรา<br>(บันทึก)</th><th>นน.ขนส่ง<br>(ชั่งจริง)</th><th>Δนน.</th><th>COD</th><th>เรทของเรา<br>(จากนน.เรา)</th><th>เรทควรเป็น<br>(จากนน.ขนส่ง)</th><th>💰 เราจ่ายจริง</th><th>ต่าง(เรท)</th><th>ส่วนเกินจากนน.</th><th>สถานะ</th></tr>';
-  h+=rows.slice(0,4000).map(r=>'<tr class="'+cls[r.status]+'"><td>'+(r.tracking||'–')+'</td><td>'+(r.carrier==='flash'?'Flash':r.carrier==='post'?'ปณ':r.carrier==='unknown'?'❓':'รับเอง')+'</td><td>'+fmt(r.ourW)+'</td><td>'+fmt(r.carrierW)+'</td><td>'+(r.wDiff!=null&&r.wDiff>0?'<b style="color:var(--red)">'+sg(r.wDiff)+'</b>':sg(r.wDiff))+'</td><td>'+(r.cod?fmt(r.cod):'–')+'</td><td>'+fmt(r.correctOurs)+'</td><td><b>'+fmt(r.correctCarrier)+'</b></td><td>'+fmt(r.cr)+'</td><td><b>'+sg(r.rateErr)+'</b></td><td>'+(r.wCost&&r.wCost>0?'<b style="color:var(--blue)">'+sg(r.wCost)+'</b>':sg(r.wCost))+'</td><td>'+badge[r.status]+'</td></tr>').join('');
+  let h='<tr><th>เลขพัสดุ</th><th>SKU</th><th>ขนส่ง</th><th>นน.เรา<br>(บันทึก)</th><th>นน.ขนส่ง<br>(ชั่งจริง)</th><th>Δนน.</th><th>COD</th><th>เรทของเรา<br>(จากนน.เรา)</th><th>เรทควรเป็น<br>(จากนน.ขนส่ง)</th><th>💰 เราจ่ายจริง</th><th>ต่าง(เรท)</th><th>ส่วนเกินจากนน.</th><th>สถานะ</th></tr>';
+  const skuCell=r=>{const s=r.sku||'';if(!s)return '–';const esc=s.replace(/</g,'&lt;');
+    return '<span title="'+esc.replace(/"/g,'&quot;')+'" style="font-size:11px">'+(esc.length>28?esc.slice(0,28)+'…':esc)+'</span>';};
+  h+=rows.slice(0,4000).map(r=>'<tr class="'+cls[r.status]+'"><td>'+(r.tracking||'–')+'</td><td>'+skuCell(r)+'</td><td>'+(r.carrier==='flash'?'Flash':r.carrier==='post'?'ปณ':r.carrier==='unknown'?'❓':'รับเอง')+'</td><td>'+fmt(r.ourW)+'</td><td>'+fmt(r.carrierW)+'</td><td>'+(r.wDiff!=null&&r.wDiff>0?'<b style="color:var(--red)">'+sg(r.wDiff)+'</b>':sg(r.wDiff))+'</td><td>'+(r.cod?fmt(r.cod):'–')+'</td><td>'+fmt(r.correctOurs)+'</td><td><b>'+fmt(r.correctCarrier)+'</b></td><td>'+fmt(r.cr)+'</td><td><b>'+sg(r.rateErr)+'</b></td><td>'+(r.wCost&&r.wCost>0?'<b style="color:var(--blue)">'+sg(r.wCost)+'</b>':sg(r.wCost))+'</td><td>'+badge[r.status]+'</td></tr>').join('');
   document.getElementById('resTbl').innerHTML=h;
 }
 const ST_EXPORT={
@@ -808,27 +828,27 @@ function styleHeader(ws,ncol){for(let C=0;C<ncol;C++){const a=XLSX.utils.encode_
 function buildAuditSheet(rows){
   const num=v=>(v==null||isNaN(v))?'':+v;
   const carLabel=c=>c==='flash'?'Flash':c==='post'?'ไปรษณีย์':c==='unknown'?'อ่านไม่ออก':'รับเอง';
-  const headers=['เลขพัสดุ','ขนส่ง','นน.เรา','นน.ขนส่ง','Δนน.','COD','เรทของเรา','เรทควรเป็น','เราจ่ายจริง','ต่าง(เรท)','ส่วนเกินจากนน.','สถานะ','คิดจาก'];
+  const headers=['เลขพัสดุ','เลขออเดอร์','SKU','ขนส่ง','นน.เรา','นน.ขนส่ง','Δนน.','COD','เรทของเรา','เรทควรเป็น','เราจ่ายจริง','ต่าง(เรท)','ส่วนเกินจากนน.','สถานะ','คิดจาก'];
   const aoa=[headers];
-  rows.forEach(r=>aoa.push([r.tracking||'',carLabel(r.carrier),num(r.ourW),num(r.carrierW),num(r.wDiff),num(r.cod),
+  rows.forEach(r=>aoa.push([r.tracking||'',r.order||'',r.sku||'',carLabel(r.carrier),num(r.ourW),num(r.carrierW),num(r.wDiff),num(r.cod),
     num(r.correctOurs),num(r.correctCarrier),num(r.cr),num(r.rateErr),num(r.wCost),(ST_EXPORT[r.status]||['',''])[0],r.basis||'']));
   const ws=XLSX.utils.aoa_to_sheet(aoa);
-  ws['!cols']=[{wch:18},{wch:10},{wch:9},{wch:10},{wch:8},{wch:10},{wch:11},{wch:12},{wch:12},{wch:11},{wch:14},{wch:13},{wch:38}];
+  ws['!cols']=[{wch:18},{wch:16},{wch:30},{wch:10},{wch:9},{wch:10},{wch:8},{wch:10},{wch:11},{wch:12},{wch:12},{wch:11},{wch:14},{wch:13},{wch:38}];
   const rng=XLSX.utils.decode_range(ws['!ref']);
-  const money=[6,7,8,9,10],wcol=[2,3,4];
+  const money=[8,9,10,11,12],wcol=[4,5,6];
   for(let R=1;R<=rng.e.r;R++)for(let C=0;C<=rng.e.c;C++){
     const a=XLSX.utils.encode_cell({r:R,c:C}),cell=ws[a];if(!cell)continue;
-    cell.s={alignment:{horizontal:(C===0||C===12)?'left':'center',vertical:'center'},border:XB,font:{sz:10}};
+    cell.s={alignment:{horizontal:(C===0||C===1||C===2||C===14)?'left':'center',vertical:'center',wrapText:C===2},border:XB,font:{sz:10}};
     if(money.includes(C)&&typeof cell.v==='number')cell.z='#,##0.00';
     if(wcol.includes(C)&&typeof cell.v==='number')cell.z='0.00';
   }
   styleHeader(ws,headers.length);
   for(let R=1;R<=rng.e.r;R++){
     const cf=ST_EXPORT[rows[R-1]&&rows[R-1].status];
-    if(cf){const a=XLSX.utils.encode_cell({r:R,c:11});if(ws[a])ws[a].s={...ws[a].s,fill:{fgColor:{rgb:cf[1]}},font:{color:{rgb:cf[2]},bold:true,sz:10}};}
-    const da=XLSX.utils.encode_cell({r:R,c:9}),dc=ws[da];
+    if(cf){const a=XLSX.utils.encode_cell({r:R,c:13});if(ws[a])ws[a].s={...ws[a].s,fill:{fgColor:{rgb:cf[1]}},font:{color:{rgb:cf[2]},bold:true,sz:10}};}
+    const da=XLSX.utils.encode_cell({r:R,c:11}),dc=ws[da];
     if(dc&&typeof dc.v==='number'&&dc.v>0.001)dc.s={...dc.s,font:{color:{rgb:'C00000'},bold:true,sz:10}};
-    const wa=XLSX.utils.encode_cell({r:R,c:10}),wc=ws[wa];
+    const wa=XLSX.utils.encode_cell({r:R,c:12}),wc=ws[wa];
     if(wc&&typeof wc.v==='number'&&wc.v>0.001)wc.s={...wc.s,font:{color:{rgb:'1F3864'},bold:true,sz:10}};
   }
   ws['!autofilter']={ref:ws['!ref']};
