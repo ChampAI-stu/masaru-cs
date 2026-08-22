@@ -232,7 +232,7 @@
   <div class="card"><h2>เรทไปรษณีย์ไทย — แก้ไขได้</h2>
     <div class="tbl-scroll" style="max-height:400px"><table id="postTbl"></table></div>
     <div class="row" style="margin-top:10px"><button class="btn sm ghost" onclick="resetPost()">รีเซ็ตค่าเริ่มต้น</button>
-      <span class="muted">กดปุ่มดินสอเพื่อแก้ไข · แถวสุดท้ายคือของหนักเกิน 20 กิโลกรัม ใช้วิธีคิดค่าส่งเริ่มต้นแล้วบวกตามกิโลกรัมที่เกิน · ส่วนของค่าบริการต่อชิ้น ค่าเก็บเงินปลายทาง และพื้นที่พิเศษ ตั้งได้ในแท็บตั้งค่า</span></div>
+      <span class="muted">คิดตามน้ำหนักเป็นกรัมตามสัญญา (1 กิโลกรัม เท่ากับ 1,000 กรัม) · กดปุ่มดินสอเพื่อแก้ไข · แถวสุดท้ายคือของหนักเกิน 20,000 กรัม ใช้วิธีคิดค่าส่งเริ่มต้นแล้วบวกตามกิโลกรัมที่เกิน · ส่วนของค่าบริการต่อชิ้น ค่าเก็บเงินปลายทาง และพื้นที่พิเศษ ตั้งได้ในแท็บตั้งค่า</span></div>
     <div id="rateSyncMsg" class="muted" style="margin-top:8px;font-size:12px">กำลังตรวจสอบเรทจากเซิร์ฟเวอร์...</div>
   </div>
 </div>
@@ -426,10 +426,14 @@ const FLASH_DEFAULT=[[3.5,12,12],[3.5,12,12],[3.5,12,12],[4,16,16],[5,16,16],[6,
 [21,175,175],[22,182,182],[23,189,189],[24,196,196],[25,203,203],[26,210,210],[27,217,217],[28,224,224],[29,231,231],[30,238,238],
 [31,259,259],[32,266,266],[33,273,273],[34,280,280],[35,287,287],[36,297.5,294],[37,308,301],[38,318.5,308],[39,329,315],[40,339.5,322],
 [41,350,350],[42,360.5,357],[43,371,364],[44,381.5,371],[45,392,378],[46,402.5,385],[47,413,392],[48,423.5,399],[49,434,406],[50,444.5,413]];
-const POST_DEFAULT=[[1,20],[2,30],[3,40],[4,50],[5,60],[6,70],[7,80],[8,90],[9,100],[10,110],[11,115],[12,120],[13,125],[14,130],[15,135],[16,140],[17,145],[18,150],[19,155],[20,160]];
+/* เรทไปรษณีย์ไทย — เก็บเป็น "กรัม" ตามสัญญา (ตัดปัญหาทศนิยมกิโลกรัม) */
+const POST_DEFAULT=[[1000,20],[2000,30],[3000,40],[4000,50],[5000,60],[6000,70],[7000,80],[8000,90],[9000,100],[10000,110],[11000,115],[12000,120],[13000,125],[14000,130],[15000,135],[16000,140],[17000,145],[18000,150],[19000,155],[20000,160]];
+const POST_MAX_G=30000;
+const G=n=>Math.round(n).toLocaleString('th-TH');
+const toG=kg=>Math.round((+kg||0)*1000);
 let flashRates=FLASH_DEFAULT.map(r=>r.slice());
 let postRates=POST_DEFAULT.map(r=>r.slice());
-let postOver={base:160,perkg:15};
+let postOver={base:160,perkg:15};   // บาท ต่อทุก 1,000 กรัมที่เกิน
 
 /* ===== เก็บเรทบนเซิร์ฟเวอร์ (Supabase) — ทุกเครื่องเห็นตรงกัน =====
    localStorage ใช้เป็นสำเนาสำรองกรณีอินเทอร์เน็ตขัดข้องเท่านั้น */
@@ -443,7 +447,10 @@ function applyCfgObj(o){if(!o)return;Object.keys(o).forEach(id=>{const el=docume
 function applyRatePayload(d){
   if(!d)return false;let hit=false;
   if(okRows(d.flashRates,3)){flashRates=d.flashRates;hit=true;}
-  if(okRows(d.postRates,2)){postRates=d.postRates;hit=true;}
+  if(okRows(d.postRates,2)){
+    const looksKg=d.postRates[d.postRates.length-1][0]<=200;
+    postRates=looksKg?d.postRates.map(r=>[Math.round(r[0]*1000),r[1]]):d.postRates;hit=true;
+  }
   if(d.postOver&&isFinite(+d.postOver.base)&&isFinite(+d.postOver.perkg)){postOver={base:+d.postOver.base,perkg:+d.postOver.perkg};hit=true;}
   if(d.cfg){applyCfgObj(d.cfg);hit=true;}
   return hit;
@@ -538,12 +545,16 @@ function flashBase(weight,vol,dest){
   return{rate:dest==='BKK'?row[1]:row[2],charge,volDriven,basis:'นน.คิด '+Math.round(charge*100)/100+'kg'+(volDriven?'(ปริมาตร)':'')+'→เรท '+(dest==='BKK'?row[1]:row[2])};
 }
 function postBase(weight){
-  const c=cfg(),w=+weight||0;
-  if(w>30)return{rate:null,basis:'หนักเกิน 30 กิโลกรัม ไม่มีในพิกัดสัญญา'};
+  const c=cfg(),g=toG(weight);
+  if(g>POST_MAX_G)return{rate:null,basis:'หนักเกิน '+G(POST_MAX_G)+' กรัม ไม่มีในพิกัดสัญญา'};
   const last=postRates[postRates.length-1][0];
-  if(w>last)return{rate:c.poBase+Math.ceil(w-last)*c.poPerkg,basis:'เกิน '+last+' กิโลกรัม เริ่มต้น '+c.poBase+' บาท บวกส่วนที่เกิน '+Math.ceil(w-last)+' กิโลกรัม'};
-  let idx=postRates.findIndex(r=>w<=r[0]);if(idx<0)idx=postRates.length-1;
-  return{rate:postRates[idx][1],basis:'ค่าส่งตามน้ำหนัก '+postRates[idx][1]+' บาท'};
+  if(g>last){
+    const extra=Math.ceil((g-last)/1000);
+    return{rate:c.poBase+extra*c.poPerkg,
+      basis:'น้ำหนัก '+G(g)+' กรัม เกิน '+G(last)+' กรัม · เริ่มต้น '+c.poBase+' บาท บวกส่วนที่เกิน '+extra+' หน่วย หน่วยละ '+c.poPerkg+' บาท'};
+  }
+  let idx=postRates.findIndex(r=>g<=r[0]);if(idx<0)idx=postRates.length-1;
+  return{rate:postRates[idx][1],basis:'น้ำหนัก '+G(g)+' กรัม อยู่ในช่วงไม่เกิน '+G(postRates[idx][0])+' กรัม ค่าส่ง '+postRates[idx][1]+' บาท'};
 }
 function correctRate(rec){
   const c=cfg(),car=normCar(rec.carrier);
@@ -994,15 +1005,15 @@ function renderFlashEdit(){
     '<td><button class="pencil" onclick="openEdit(\'flash\','+i+')">✏️</button></td></tr>');
   document.getElementById('flashTbl').innerHTML=h;}
 function renderPostEdit(){
-  let h='<tr><th>ช่วงน้ำหนัก</th><th>น้ำหนักสูงสุดของช่วง<br>(กิโลกรัม)</th><th>ค่าส่ง<br>(บาท)</th><th>แก้ไข</th></tr>';
-  postRates.forEach((r,i)=>{const lo=i===0?'0':postRates[i-1][0];
-    const ch=i===0?('ไม่เกิน '+r[0]+' กิโลกรัม'):('เกิน '+lo+' กิโลกรัม ถึง '+r[0]+' กิโลกรัม');
+  let h='<tr><th>ช่วงน้ำหนัก</th><th>น้ำหนักสูงสุดของช่วง<br>(กรัม)</th><th>ค่าส่ง<br>(บาท)</th><th>แก้ไข</th></tr>';
+  postRates.forEach((r,i)=>{const lo=i===0?0:postRates[i-1][0];
+    const ch=i===0?('ไม่เกิน '+G(r[0])+' กรัม'):('เกิน '+G(lo)+' กรัม ถึง '+G(r[0])+' กรัม');
     h+='<tr'+(i%2?' style="background:var(--rowLighter)"':'')+'><td>'+ch+'</td>'+
-    '<td>'+r[0]+'</td><td>'+r[1]+' บาท</td>'+
+    '<td>'+G(r[0])+'</td><td>'+r[1]+' บาท</td>'+
     '<td><button class="pencil" onclick="openEdit(\'post\','+i+')">✏️</button></td></tr>';});
   const last=postRates[postRates.length-1][0];
-  h+='<tr style="background:#fff3f2"><td>เกิน '+last+' กิโลกรัม ถึง 30 กิโลกรัม</td><td>คิดแบบบวกต่อกิโลกรัม</td>'+
-     '<td>เริ่มต้น '+postOver.base+' บาท แล้วบวกกิโลกรัมละ '+postOver.perkg+' บาท</td>'+
+  h+='<tr style="background:#fff3f2"><td>เกิน '+G(last)+' กรัม ถึง '+G(POST_MAX_G)+' กรัม</td><td>คิดเพิ่มทุก 1,000 กรัม</td>'+
+     '<td>เริ่มต้น '+postOver.base+' บาท แล้วบวก '+postOver.perkg+' บาท ทุก 1,000 กรัมที่เกิน</td>'+
      '<td><button class="pencil" onclick="openEdit(\'postover\',0)">✏️</button></td></tr>';
   document.getElementById('postTbl').innerHTML=h;}
 function addFlashRow(){const l=flashRates[flashRates.length-1];flashRates.push([l[0]+1,l[1],l[2]]);renderFlashEdit();openEdit('flash',flashRates.length-1,true);}
@@ -1013,8 +1024,8 @@ function resetPost(){if(confirm('รีเซ็ตเรทไปรษณี�
 let editTarget={table:null,index:null,isNew:false};
 const EM_FIELDS={
   flash:[{label:'น้ำหนักสูงสุดของช่วงนี้ (กิโลกรัม)',step:0.01},{label:'ค่าส่งในกรุงเทพฯ (บาท)',step:0.5},{label:'ค่าส่งต่างจังหวัด (บาท)',step:0.5}],
-  post:[{label:'น้ำหนักสูงสุดของช่วงนี้ (กิโลกรัม)',step:1},{label:'ค่าส่งของช่วงนี้ (บาท)',step:1}],
-  postover:[{label:'ค่าส่งเริ่มต้นที่ 20 กิโลกรัม (บาท)',step:1},{label:'บวกเพิ่มกิโลกรัมละ (บาท)',step:1}]
+  post:[{label:'น้ำหนักสูงสุดของช่วงนี้ (กรัม)',step:100},{label:'ค่าส่งของช่วงนี้ (บาท)',step:1}],
+  postover:[{label:'ค่าส่งเริ่มต้นที่ 20,000 กรัม (บาท)',step:1},{label:'บวกเพิ่มทุก 1,000 กรัม (บาท)',step:1}]
 };
 function rowVals(table,index){
   if(table==='flash')return flashRates[index];
