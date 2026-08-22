@@ -166,6 +166,11 @@
 
   <div id="resultCard" class="card hide">
     <h2>ผลการตรวจสอบ</h2>
+    <div id="rateDrift" class="hide" style="background:#FFF4CE;border:1px solid #E8C766;border-left:5px solid #C9A84C;border-radius:8px;padding:10px 14px;margin:0 0 12px;font-size:13px">
+      <b>⚠️ ตารางเรทถูกแก้หลังจากรันตรวจรอบนี้</b> — ตัวเลขที่แสดงยังเป็นของเรทชุดเก่า
+      <button class="btn navy" style="margin-left:10px;padding:4px 12px;font-size:12px" onclick="runAudit()">🔄 คำนวณใหม่</button>
+      <div id="rateDriftDetail" class="muted" style="margin-top:6px;font-size:12px"></div>
+    </div>
     <div id="alertBox"></div>
     <div class="kpi-grid" id="kpis"></div>
     <div class="row" style="margin:14px 0">
@@ -222,12 +227,13 @@
     <div class="tbl-scroll" style="max-height:360px"><table id="flashTbl"></table></div>
     <div class="row" style="margin-top:10px"><button class="btn sm" onclick="addFlashRow()">+ เพิ่มแถว</button>
       <button class="btn sm ghost" onclick="resetFlash()">รีเซ็ตค่าเริ่มต้น</button>
-      <span class="muted">แตะ ✏️ เพื่อแก้ · ลบแถวได้ในป๊อปอัพ · >50kg: ทุก 5cm=1kg → BKK 15฿/kg, UPC 10฿/kg</span></div>
+      <span class="muted">กดปุ่มดินสอเพื่อแก้ไข · ลบแถวได้ในหน้าต่างที่เปิดขึ้นมา · เกิน 50 กิโลกรัม คิดทุก 5 เซนติเมตรเท่ากับ 1 กิโลกรัม โดยกรุงเทพฯ กิโลกรัมละ 15 บาท ต่างจังหวัด กิโลกรัมละ 10 บาท</span></div>
   </div>
   <div class="card"><h2>เรทไปรษณีย์ไทย — แก้ไขได้</h2>
     <div class="tbl-scroll" style="max-height:400px"><table id="postTbl"></table></div>
     <div class="row" style="margin-top:10px"><button class="btn sm ghost" onclick="resetPost()">รีเซ็ตค่าเริ่มต้น</button>
-      <span class="muted">แตะ ✏️ เพื่อแก้ · แถว ">20kg" คือฐานเริ่ม + บวกต่อ kg · ส่วนบวก +2฿ / COD% / พื้นที่พิเศษ อยู่ในแท็บตั้งค่า</span></div>
+      <span class="muted">กดปุ่มดินสอเพื่อแก้ไข · แถวสุดท้ายคือของหนักเกิน 20 กิโลกรัม ใช้วิธีคิดค่าส่งเริ่มต้นแล้วบวกตามกิโลกรัมที่เกิน · ส่วนของค่าบริการต่อชิ้น ค่าเก็บเงินปลายทาง และพื้นที่พิเศษ ตั้งได้ในแท็บตั้งค่า</span></div>
+    <div id="rateSyncMsg" class="muted" style="margin-top:8px;font-size:12px">กำลังตรวจสอบเรทจากเซิร์ฟเวอร์...</div>
   </div>
 </div>
 
@@ -425,34 +431,76 @@ let flashRates=FLASH_DEFAULT.map(r=>r.slice());
 let postRates=POST_DEFAULT.map(r=>r.slice());
 let postOver={base:160,perkg:15};
 
-/* ===== PERSIST RATES (localStorage) ===== */
+/* ===== เก็บเรทบนเซิร์ฟเวอร์ (Supabase) — ทุกเครื่องเห็นตรงกัน =====
+   localStorage ใช้เป็นสำเนาสำรองกรณีอินเทอร์เน็ตขัดข้องเท่านั้น */
 const RATE_LS_KEY='masaru_cs_rates_v1', CFG_LS_KEY='masaru_cs_cfg_v1';
-function saveRates(){
-  try{localStorage.setItem(RATE_LS_KEY,JSON.stringify({flashRates,postRates,postOver}));}catch(e){}
+const RATE_ROW_ID=1;
+let rateLoadedFromCloud=false, rateSyncing=false;
+
+function okRows(a,len){return Array.isArray(a)&&a.length>0&&a.every(r=>Array.isArray(r)&&r.length===len&&r.every(n=>typeof n==='number'&&isFinite(n)));}
+function currentCfgObj(){const o={};document.querySelectorAll('[id^="cfg_"]').forEach(el=>o[el.id]=el.value);return o;}
+function applyCfgObj(o){if(!o)return;Object.keys(o).forEach(id=>{const el=document.getElementById(id);if(el)el.value=o[id];});_cfg=null;}
+function applyRatePayload(d){
+  if(!d)return false;let hit=false;
+  if(okRows(d.flashRates,3)){flashRates=d.flashRates;hit=true;}
+  if(okRows(d.postRates,2)){postRates=d.postRates;hit=true;}
+  if(d.postOver&&isFinite(+d.postOver.base)&&isFinite(+d.postOver.perkg)){postOver={base:+d.postOver.base,perkg:+d.postOver.perkg};hit=true;}
+  if(d.cfg){applyCfgObj(d.cfg);hit=true;}
+  return hit;
 }
-function loadRates(){
+function rateStatus(msg,tone){
+  const el=document.getElementById('rateSyncMsg');if(!el)return;
+  el.textContent=msg;
+  el.style.color=tone==='bad'?'var(--red)':tone==='good'?'#1B7F3B':'var(--muted)';
+}
+function cacheLocal(){
+  try{localStorage.setItem(RATE_LS_KEY,JSON.stringify({flashRates,postRates,postOver}));
+      localStorage.setItem(CFG_LS_KEY,JSON.stringify(currentCfgObj()));}catch(e){}
+}
+function loadLocalCache(){
   try{
-    const raw=localStorage.getItem(RATE_LS_KEY);if(!raw)return;
-    const d=JSON.parse(raw);
-    const okRows=(a,len)=>Array.isArray(a)&&a.length>0&&a.every(r=>Array.isArray(r)&&r.length===len&&r.every(n=>typeof n==='number'&&isFinite(n)));
-    if(okRows(d.flashRates,3))flashRates=d.flashRates;
-    if(okRows(d.postRates,2))postRates=d.postRates;
-    if(d.postOver&&isFinite(+d.postOver.base)&&isFinite(+d.postOver.perkg))postOver={base:+d.postOver.base,perkg:+d.postOver.perkg};
+    const raw=localStorage.getItem(RATE_LS_KEY);if(raw)applyRatePayload(JSON.parse(raw));
+    const rc=localStorage.getItem(CFG_LS_KEY);if(rc)applyCfgObj(JSON.parse(rc));
   }catch(e){}
 }
-function saveCfgLS(){
+/* บันทึกขึ้นเซิร์ฟเวอร์ — ทุกเครื่องที่เปิดหน้านี้จะได้ค่าเดียวกัน */
+async function saveRates(){
+  cacheLocal();
+  const c=sbClient();
+  if(!c){rateStatus('บันทึกในเครื่องแล้ว แต่ยังไม่ได้ส่งขึ้นเซิร์ฟเวอร์ (ไม่มีอินเทอร์เน็ต)','bad');return;}
+  rateSyncing=true;rateStatus('กำลังบันทึกขึ้นเซิร์ฟเวอร์...');
   try{
-    const o={};document.querySelectorAll('[id^="cfg_"]').forEach(el=>o[el.id]=el.value);
-    localStorage.setItem(CFG_LS_KEY,JSON.stringify(o));
-  }catch(e){}
+    let who='';try{const {data}=await c.auth.getUser();who=(data&&data.user&&data.user.email)||'';}catch(e){}
+    const {error}=await c.from('rate_config').upsert({
+      id:RATE_ROW_ID,
+      data:{flashRates,postRates,postOver,cfg:currentCfgObj()},
+      updated_by:who,
+      updated_at:new Date().toISOString()
+    });
+    if(error)throw error;
+    rateStatus('บันทึกขึ้นเซิร์ฟเวอร์แล้ว ทุกเครื่องจะเห็นค่านี้ · '+new Date().toLocaleString('th-TH'),'good');
+  }catch(e){
+    rateStatus('บันทึกขึ้นเซิร์ฟเวอร์ไม่สำเร็จ: '+(e.message||e)+' (ค่ายังอยู่ในเครื่องนี้)','bad');
+  }finally{rateSyncing=false;}
 }
-function loadCfgLS(){
+/* ดึงเรทจากเซิร์ฟเวอร์ตอนเข้าระบบ */
+async function loadRates(){
+  loadLocalCache();
+  const c=sbClient();if(!c){rateStatus('ใช้ค่าที่เก็บไว้ในเครื่องนี้ (เชื่อมต่อเซิร์ฟเวอร์ไม่ได้)','bad');return;}
   try{
-    const raw=localStorage.getItem(CFG_LS_KEY);if(!raw)return;
-    const o=JSON.parse(raw);
-    Object.keys(o).forEach(id=>{const el=document.getElementById(id);if(el)el.value=o[id];});
-    _cfg=null;
-  }catch(e){}
+    const {data,error}=await c.from('rate_config').select('data,updated_by,updated_at').eq('id',RATE_ROW_ID).maybeSingle();
+    if(error)throw error;
+    if(data&&data.data){
+      applyRatePayload(data.data);rateLoadedFromCloud=true;cacheLocal();
+      const when=data.updated_at?new Date(data.updated_at).toLocaleString('th-TH'):'';
+      rateStatus('ใช้เรทจากเซิร์ฟเวอร์ · แก้ล่าสุดโดย '+(data.updated_by||'ไม่ระบุ')+(when?' เมื่อ '+when:''),'good');
+    }else{
+      rateStatus('เซิร์ฟเวอร์ยังไม่มีเรทที่บันทึกไว้ — แก้แล้วกดยืนยัน ระบบจะส่งขึ้นให้ทุกเครื่องใช้ร่วมกัน');
+    }
+  }catch(e){
+    rateStatus('ดึงเรทจากเซิร์ฟเวอร์ไม่ได้: '+(e.message||e)+' — ใช้ค่าที่เก็บไว้ในเครื่องนี้ไปก่อน','bad');
+  }
+  renderFlashEdit();renderPostEdit();
 }
 
 /* ===== SETTINGS ===== */
@@ -491,11 +539,11 @@ function flashBase(weight,vol,dest){
 }
 function postBase(weight){
   const c=cfg(),w=+weight||0;
-  if(w>30)return{rate:null,basis:'เกิน 30kg'};
+  if(w>30)return{rate:null,basis:'หนักเกิน 30 กิโลกรัม ไม่มีในพิกัดสัญญา'};
   const last=postRates[postRates.length-1][0];
-  if(w>last)return{rate:c.poBase+Math.ceil(w-last)*c.poPerkg,basis:'>'+last+'kg'};
+  if(w>last)return{rate:c.poBase+Math.ceil(w-last)*c.poPerkg,basis:'เกิน '+last+' กิโลกรัม เริ่มต้น '+c.poBase+' บาท บวกส่วนที่เกิน '+Math.ceil(w-last)+' กิโลกรัม'};
   let idx=postRates.findIndex(r=>w<=r[0]);if(idx<0)idx=postRates.length-1;
-  return{rate:postRates[idx][1],basis:'ฐาน '+postRates[idx][1]};
+  return{rate:postRates[idx][1],basis:'ค่าส่งตามน้ำหนัก '+postRates[idx][1]+' บาท'};
 }
 function correctRate(rec){
   const c=cfg(),car=normCar(rec.carrier);
@@ -507,15 +555,15 @@ function correctRate(rec){
     if(b.rate==null)return{car,rate:null,basis:b.basis};
     let t=b.rate,p=[b.basis];
     if(c.flashcodin&&cod>0){const f=Math.round(cod*c.flashcod)/100;t+=f;p.push('+COD '+f.toFixed(2));}
-    return{car,rate:Math.round(t*100)/100,basis:p.join(' '),charge:b.charge,volDriven:b.volDriven};
+    return{car,rate:Math.round(t*100)/100,basis:p.join(' · '),charge:b.charge,volDriven:b.volDriven};
   }
   const b=postBase(rec.weight);
   if(b.rate==null)return{car,rate:null,basis:b.basis};
   let t=b.rate,p=[b.basis];
-  if(c.post2){t+=c.post2;p.push('+'+c.post2);}
-  if(rec.special){t+=c.postspecial;p.push('+'+c.postspecial+'พื้นที่พิเศษ');}
+  if(c.post2){t+=c.post2;p.push('บวกค่าบริการต่อชิ้น '+c.post2+' บาท');}
+  if(rec.special){t+=c.postspecial;p.push('บวกพื้นที่พิเศษ '+c.postspecial+' บาท');}
   if(c.postcodin&&cod>0){const f=Math.round(Math.min(cod,30000)*c.postcod)/100;t+=f;p.push('+COD '+f.toFixed(2));}
-  return{car,rate:Math.round(t*100)/100,basis:p.join(' '),charge:rec.weight};
+  return{car,rate:Math.round(t*100)/100,basis:p.join(' · '),charge:rec.weight};
 }
 
 /* ===== SINGLE ===== */
@@ -603,8 +651,34 @@ function runAudit(){
     finally{ _cfg=null; hideLoading(); }
   },60);
 }
+/* ===== RATE FINGERPRINT (กันผลเก่า/เรทใหม่ไม่ตรงกัน) ===== */
+let lastAuditSig=null,lastAuditDesc='';
+function rateSig(){
+  try{
+    const ids=['cfg_post2','cfg_postspecial','cfg_postcod','cfg_postcodin','cfg_flashcod','cfg_flashcodin','cfg_flashvol','cfg_div','cfg_tol','cfg_autospecial'];
+    const cv={};ids.forEach(i=>{const el=document.getElementById(i);if(el)cv[i]=el.value;});
+    return JSON.stringify({postRates,postOver,flashRates,cv});
+  }catch(e){return null;}
+}
+function rateDesc(){
+  const p2=(document.getElementById('cfg_post2')||{}).value;
+  return 'ปณ. '+postRates.length+' ขั้น (ขั้นแรก ≤'+postRates[0][0]+'kg='+postRates[0][1]+'฿ · ขั้นสอง ≤'+(postRates[1]?postRates[1][0]:'-')+'kg='+(postRates[1]?postRates[1][1]:'-')+'฿) +'+p2+'฿/ชิ้น';
+}
+function checkRateDrift(){
+  const box=document.getElementById('rateDrift');if(!box)return;
+  if(!results||!results.length||!lastAuditSig){box.classList.add('hide');return;}
+  const now=rateSig();
+  if(now&&now!==lastAuditSig){
+    box.classList.remove('hide');
+    document.getElementById('rateDriftDetail').innerHTML=
+      'ผลที่แสดงคำนวณด้วย: <b>'+lastAuditDesc+'</b><br>เรทปัจจุบันในระบบ: <b>'+rateDesc()+'</b>';
+  }else box.classList.add('hide');
+}
+setInterval(checkRateDrift,1200);
+
 function doAudit(mu,bill){
   _cfg=readCfg(); const c=_cfg,tol=c.tol;
+  lastAuditSig=rateSig(); lastAuditDesc=rateDesc();
   /* รวม SKU ทุกแถวที่เป็นเลขพัสดุเดียวกัน (กรณี JST export แยกบรรทัดต่อสินค้า) */
   const skuByTrk={};
   if(mu.sku&&mu.tracking){
@@ -721,7 +795,7 @@ async function openHist(id){
     const {data,error}=await c.from('audit_history').select('results').eq('id',id).single();
     if(error)throw error;
     if(!data||!data.results){hideLoading();alert('ไม่พบตารางของประวัตินี้');return;}
-    results=data.results;renderKPI();renderTable();renderAlert();renderDashboard();
+    results=data.results;lastAuditSig=null;lastAuditDesc='(ผลจากประวัติ)';renderKPI();renderTable();renderAlert();renderDashboard();
     document.getElementById('resultCard').classList.remove('hide');
     document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));
     const bt=document.querySelector('.tab-btn[data-tab="batch"]');if(bt)bt.classList.add('active');
@@ -815,7 +889,7 @@ function renderTable(){
   let h='<tr><th>เลขพัสดุ</th><th>SKU</th><th>ขนส่ง</th><th>นน.เรา<br>(บันทึก)</th><th>นน.ขนส่ง<br>(ชั่งจริง)</th><th>Δนน.</th><th>COD</th><th>เรทของเรา<br>(จากนน.เรา)</th><th>เรทควรเป็น<br>(จากนน.ขนส่ง)</th><th>💰 เราจ่ายจริง</th><th>ต่าง(เรท)</th><th>ส่วนเกินจากนน.</th><th>สถานะ</th></tr>';
   const skuCell=r=>{const s=r.sku||'';if(!s)return '–';const esc=s.replace(/</g,'&lt;');
     return '<span title="'+esc.replace(/"/g,'&quot;')+'" style="font-size:11px">'+(esc.length>28?esc.slice(0,28)+'…':esc)+'</span>';};
-  h+=rows.slice(0,4000).map(r=>'<tr class="'+cls[r.status]+'"><td>'+(r.tracking||'–')+'</td><td>'+skuCell(r)+'</td><td>'+(r.carrier==='flash'?'Flash':r.carrier==='post'?'ปณ':r.carrier==='unknown'?'❓':'รับเอง')+'</td><td>'+fmt(r.ourW)+'</td><td>'+fmt(r.carrierW)+'</td><td>'+(r.wDiff!=null&&r.wDiff>0?'<b style="color:var(--red)">'+sg(r.wDiff)+'</b>':sg(r.wDiff))+'</td><td>'+(r.cod?fmt(r.cod):'–')+'</td><td>'+fmt(r.correctOurs)+'</td><td><b>'+fmt(r.correctCarrier)+'</b></td><td>'+fmt(r.cr)+'</td><td><b>'+sg(r.rateErr)+'</b></td><td>'+(r.wCost&&r.wCost>0?'<b style="color:var(--blue)">'+sg(r.wCost)+'</b>':sg(r.wCost))+'</td><td>'+badge[r.status]+'</td></tr>').join('');
+  h+=rows.slice(0,4000).map(r=>'<tr class="'+cls[r.status]+'"><td>'+(r.tracking||'–')+'</td><td>'+skuCell(r)+'</td><td>'+(r.carrier==='flash'?'Flash':r.carrier==='post'?'ปณ':r.carrier==='unknown'?'❓':'รับเอง')+'</td><td>'+fmt(r.ourW)+'</td><td>'+fmt(r.carrierW)+'</td><td>'+(r.wDiff!=null&&r.wDiff>0?'<b style="color:var(--red)">'+sg(r.wDiff)+'</b>':sg(r.wDiff))+'</td><td>'+(r.cod?fmt(r.cod):'–')+'</td><td>'+fmt(r.correctOurs)+'</td><td title="'+String(r.basis||'').replace(/"/g,'&quot;')+'"><b>'+fmt(r.correctCarrier)+'</b></td><td>'+fmt(r.cr)+'</td><td><b>'+sg(r.rateErr)+'</b></td><td>'+(r.wCost&&r.wCost>0?'<b style="color:var(--blue)">'+sg(r.wCost)+'</b>':sg(r.wCost))+'</td><td>'+badge[r.status]+'</td></tr>').join('');
   document.getElementById('resTbl').innerHTML=h;
 }
 const ST_EXPORT={
@@ -914,18 +988,21 @@ function exportResult(){
 
 /* ===== EDITABLE RATE TABLES ===== */
 function renderFlashEdit(){
-  let h='<tr><th>#</th><th>นน.คิดค่า ≤kg</th><th>BKK ฿</th><th>UPC ฿</th><th>แก้</th></tr>';
+  let h='<tr><th>ลำดับ</th><th>น้ำหนักสูงสุดของช่วง<br>(กิโลกรัม)</th><th>ค่าส่งในกรุงเทพฯ<br>(บาท)</th><th>ค่าส่งต่างจังหวัด<br>(บาท)</th><th>แก้ไข</th></tr>';
   flashRates.forEach((r,i)=>h+='<tr'+(i%2?' style="background:var(--rowLighter)"':'')+'><td>'+(i+1)+'</td>'+
-    '<td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+r[2]+'</td>'+
+    '<td>'+r[0]+'</td><td>'+r[1]+' บาท</td><td>'+r[2]+' บาท</td>'+
     '<td><button class="pencil" onclick="openEdit(\'flash\','+i+')">✏️</button></td></tr>');
   document.getElementById('flashTbl').innerHTML=h;}
 function renderPostEdit(){
-  let h='<tr><th>ช่วงน้ำหนัก</th><th>≤kg</th><th>เรท ฿</th><th>แก้</th></tr>';
-  postRates.forEach((r,i)=>{const lo=i===0?'0':postRates[i-1][0];h+='<tr'+(i%2?' style="background:var(--rowLighter)"':'')+'><td>'+(i===0?'ไม่เกิน '+r[0]:'>'+lo+' ถึง '+r[0])+'kg</td>'+
-    '<td>'+r[0]+'</td><td>'+r[1]+'</td>'+
+  let h='<tr><th>ช่วงน้ำหนัก</th><th>น้ำหนักสูงสุดของช่วง<br>(กิโลกรัม)</th><th>ค่าส่ง<br>(บาท)</th><th>แก้ไข</th></tr>';
+  postRates.forEach((r,i)=>{const lo=i===0?'0':postRates[i-1][0];
+    const ch=i===0?('ไม่เกิน '+r[0]+' กิโลกรัม'):('เกิน '+lo+' กิโลกรัม ถึง '+r[0]+' กิโลกรัม');
+    h+='<tr'+(i%2?' style="background:var(--rowLighter)"':'')+'><td>'+ch+'</td>'+
+    '<td>'+r[0]+'</td><td>'+r[1]+' บาท</td>'+
     '<td><button class="pencil" onclick="openEdit(\'post\','+i+')">✏️</button></td></tr>';});
   const last=postRates[postRates.length-1][0];
-  h+='<tr style="background:#fff3f2"><td>เกิน '+last+' ถึง 30kg</td><td>—</td><td>ฐาน '+postOver.base+' +'+postOver.perkg+'/kg</td>'+
+  h+='<tr style="background:#fff3f2"><td>เกิน '+last+' กิโลกรัม ถึง 30 กิโลกรัม</td><td>คิดแบบบวกต่อกิโลกรัม</td>'+
+     '<td>เริ่มต้น '+postOver.base+' บาท แล้วบวกกิโลกรัมละ '+postOver.perkg+' บาท</td>'+
      '<td><button class="pencil" onclick="openEdit(\'postover\',0)">✏️</button></td></tr>';
   document.getElementById('postTbl').innerHTML=h;}
 function addFlashRow(){const l=flashRates[flashRates.length-1];flashRates.push([l[0]+1,l[1],l[2]]);renderFlashEdit();openEdit('flash',flashRates.length-1,true);}
@@ -935,9 +1012,9 @@ function resetPost(){if(confirm('รีเซ็ตเรทไปรษณี�
 /* ===== EDIT MODAL (ดินสอ + ยืนยัน) ===== */
 let editTarget={table:null,index:null,isNew:false};
 const EM_FIELDS={
-  flash:[{label:'น้ำหนักคิดค่า ≤ (kg)',step:0.01},{label:'เรท BKK (฿)',step:0.5},{label:'เรท UPC (฿)',step:0.5}],
-  post:[{label:'ช่วงน้ำหนัก ≤ (kg)',step:1},{label:'เรท (฿)',step:1}],
-  postover:[{label:'ฐานเริ่ม ที่ 20kg (฿)',step:1},{label:'บวกต่อ kg ที่เกิน 20 (฿)',step:1}]
+  flash:[{label:'น้ำหนักสูงสุดของช่วงนี้ (กิโลกรัม)',step:0.01},{label:'ค่าส่งในกรุงเทพฯ (บาท)',step:0.5},{label:'ค่าส่งต่างจังหวัด (บาท)',step:0.5}],
+  post:[{label:'น้ำหนักสูงสุดของช่วงนี้ (กิโลกรัม)',step:1},{label:'ค่าส่งของช่วงนี้ (บาท)',step:1}],
+  postover:[{label:'ค่าส่งเริ่มต้นที่ 20 กิโลกรัม (บาท)',step:1},{label:'บวกเพิ่มกิโลกรัมละ (บาท)',step:1}]
 };
 function rowVals(table,index){
   if(table==='flash')return flashRates[index];
@@ -986,15 +1063,20 @@ document.querySelectorAll('.tab-btn').forEach(b=>b.onclick=()=>{
   ['batch','dash','single','rate','settings','help','history'].forEach(t=>document.getElementById('tab-'+t).classList.add('hide'));
   document.getElementById('tab-'+b.dataset.tab).classList.remove('hide');
   if(b.dataset.tab==='history')renderHistory();});
-loadRates();loadCfgLS();
-document.querySelectorAll('[id^="cfg_"]').forEach(el=>el.addEventListener('change',()=>{_cfg=null;saveCfgLS();}));
+loadLocalCache();
 renderFlashEdit();renderPostEdit();
+let _cfgTimer=null;
+document.querySelectorAll('[id^="cfg_"]').forEach(el=>el.addEventListener('change',()=>{
+  _cfg=null;cacheLocal();
+  clearTimeout(_cfgTimer);_cfgTimer=setTimeout(saveRates,600);
+}));
 
 /* ===== LOGIN (Supabase Auth — cs-ia) ===== */
 const SIGNUP_CODE='MASARU-CS';   // รหัสเชิญสำหรับสมัคร (แก้ได้)
 function showAuth(){document.getElementById('authScreen').classList.remove('hide');}
 function hideAuth(session){document.getElementById('authScreen').classList.add('hide');
-  const u=document.getElementById('userEmail');if(u&&session&&session.user)u.textContent=session.user.email;}
+  const u=document.getElementById('userEmail');if(u&&session&&session.user)u.textContent=session.user.email;
+  loadRates();}
 (function initAuth(){
   const c=sbClient();const $=id=>document.getElementById(id);
   if(!c){$('authScreen').innerHTML='<div class="auth-card"><h2>เชื่อมต่อไม่ได้</h2><div class="asub">โหลด Supabase ไม่สำเร็จ — เช็คอินเทอร์เน็ต</div></div>';return;}
