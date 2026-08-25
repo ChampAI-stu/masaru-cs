@@ -129,6 +129,7 @@
 <div class="tabs">
   <button class="tab-btn active" data-tab="batch">📊 ตรวจสอบชุด</button>
   <button class="tab-btn" data-tab="dash">📈 ยอดรวม</button>
+  <button class="tab-btn" data-tab="claim">📌 ติดตามเคลม</button>
   <button class="tab-btn" data-tab="history">📁 ประวัติ</button>
   <button class="tab-btn" data-tab="single">🧮 คำนวณเดี่ยว</button>
   <button class="tab-btn" data-tab="rate">📋 ตารางเรท (แก้ได้)</button>
@@ -176,10 +177,11 @@
     <div class="row" style="margin:14px 0">
       <button class="btn gold" onclick="exportResult()">⬇ Export Excel</button>
       <button class="btn navy" onclick="saveAudit()">💾 เซฟผลตรวจ</button>
+      <button class="btn sm" onclick="claimAllOver()">📌 บันทึกรายการเก็บเกินเป็นเคส</button>
       <select id="flt" onchange="renderTable()">
         <option value="all">ทั้งหมด</option><option value="prob">เฉพาะที่ผิด</option>
         <option value="over">เก็บเกิน (เรท)</option><option value="under">เก็บขาด (เรท)</option>
-        <option value="weight">น้ำหนักขนส่งชั่งเกิน</option><option value="special">พื้นที่พิเศษ</option>
+        <option value="weight">น้ำหนักชั่งเกินผิดปกติ</option><option value="packing">รวมน้ำหนักแพ็ก</option><option value="special">พื้นที่พิเศษ</option>
         <option value="ok">ตรง</option><option value="zero">ยอดเก็บ 0</option><option value="err">คำนวณไม่ได้</option><option value="nobill">ยังไม่มีบิล</option>
       </select><span class="muted" id="cntInfo"></span>
     </div>
@@ -194,6 +196,34 @@
   <div class="card"><h2>ยอดรวม · เสียเปรียบค่าขนส่งเท่าไหร่</h2>
     <div id="dashBody"><p class="muted">ยังไม่มีข้อมูล — ไปแท็บ "📊 ตรวจสอบชุด" อัปไฟล์ JST + บิลขนส่ง แล้วกดตรวจสอบก่อน</p></div>
     <p class="muted" style="margin-top:12px">* หน้านี้แสดง "จ่ายเกินจากที่ควรเป็น" (เงินรั่ว/เสียเปรียบ) ไม่ใช่กำไรจริง เพราะเราไม่มีข้อมูลค่าส่งที่เก็บจากลูกค้า</p>
+  </div>
+</div>
+
+<div id="tab-claim" class="hide">
+  <div class="card"><h2>ติดตามการเคลม</h2>
+    <p class="muted" style="margin:0 0 12px">บันทึกผลการตรวจสอบรายพัสดุ · เก็บบนเซิร์ฟเวอร์ ทุกคนเห็นตรงกัน · สรุปยอดแยกตามวันที่รอบบิล</p>
+    <div id="claimKpi" class="kpis" style="margin-bottom:14px"></div>
+    <div class="row" style="gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px">
+      <div><label class="muted" style="display:block;font-size:12px">สถานะ</label>
+        <select id="clFlt" onchange="renderClaims()">
+          <option value="all">ทั้งหมด</option>
+          <option value="open">รอตรวจสอบ</option>
+          <option value="checked">ตรวจสอบแล้ว</option>
+          <option value="submitted">ส่งเคลมแล้ว</option>
+          <option value="received">ได้รับเงินคืนแล้ว</option>
+          <option value="rejected">เคลมไม่ได้</option>
+        </select></div>
+      <div><label class="muted" style="display:block;font-size:12px">วันที่รอบบิล</label>
+        <select id="clDate" onchange="renderClaims()"><option value="all">ทั้งหมด</option></select></div>
+      <div><label class="muted" style="display:block;font-size:12px">ค้นหาเลขพัสดุ/ออเดอร์</label>
+        <input id="clSearch" placeholder="พิมพ์เพื่อค้นหา" oninput="renderClaims()"></div>
+      <button class="btn sm" onclick="loadClaims(true)">🔄 โหลดใหม่</button>
+      <button class="btn sm ghost" onclick="exportClaims()">📥 ส่งออก Excel</button>
+    </div>
+    <h3 style="margin:18px 0 8px;font-size:15px">สรุปตามวันที่รอบบิล</h3>
+    <div class="tbl-scroll" style="max-height:320px"><table id="clSumTbl"></table></div>
+    <h3 style="margin:18px 0 8px;font-size:15px">รายการทั้งหมด</h3>
+    <div class="tbl-scroll" style="max-height:520px"><table id="clTbl"></table></div>
   </div>
 </div>
 
@@ -258,6 +288,8 @@
     <h3>ทั่วไป</h3>
     <div class="grid">
       <div><label>ค่าคลาดเคลื่อน (฿) — กันปัดเศษ</label><input id="cfg_tol" type="number" step="0.5" value="0"></div>
+      <div><label>น้ำหนักบรรจุภัณฑ์ที่บวกให้อัตโนมัติ (กรัม)<br><span class="muted" style="font-size:11px">กล่อง+กันกระแทก+เทป — บวกเข้ากับน้ำหนักที่เราบันทึก ก่อนคำนวณเรทของเรา</span></label><input id="cfg_packg" type="number" step="10" value="0"></div>
+      <div><label>ผลต่างที่ถือว่าเป็นน้ำหนักแพ็ก (กรัม)<br><span class="muted" style="font-size:11px">ชั่งหนักกว่าเราไม่เกินเท่านี้ = นับเป็นน้ำหนักแพ็ก ไม่ใช่รายการผิดปกติ</span></label><input id="cfg_packtol" type="number" step="50" value="500"></div>
       <div><label>จังหวัด/คำ = โซน BKK (Flash)</label><input id="cfg_bkk" value="กรุงเทพ,กทม,bangkok"></div>
     </div>
   </div>
@@ -408,6 +440,31 @@
 
 <div id="loading" class="hide"><div class="spinner"></div><div class="lmsg" id="lmsg">กำลังประมวลผล...</div></div>
 
+<div id="claimModal" class="modal-bg hide">
+  <div class="modal">
+    <h3 id="cm_title">บันทึกผลการตรวจสอบ</h3>
+    <div id="cm_info" class="muted" style="font-size:12px;margin-bottom:10px"></div>
+    <div class="fld"><label>สถานะ</label>
+      <select id="cm_status">
+        <option value="open">รอตรวจสอบ</option>
+        <option value="checked">ตรวจสอบแล้ว</option>
+        <option value="submitted">ส่งเคลมแล้ว</option>
+        <option value="received">ได้รับเงินคืนแล้ว</option>
+        <option value="rejected">เคลมไม่ได้</option>
+      </select></div>
+    <div class="fld"><label>วันที่รอบบิล</label><input id="cm_date" type="date"></div>
+    <div class="fld"><label>ยอดที่ขอเคลม (บาท)</label><input id="cm_claim" type="number" step="0.5"></div>
+    <div class="fld"><label>ยอดที่ได้รับคืนแล้ว (บาท)</label><input id="cm_recv" type="number" step="0.5" value="0"></div>
+    <div class="fld"><label>หมายเหตุ</label><textarea id="cm_note" rows="3" style="width:100%" placeholder="เช่น ส่งเรื่องให้ ปณ. นครปฐม แล้ว รอตอบกลับ"></textarea></div>
+    <div id="cm_meta" class="muted" style="font-size:11px;margin-bottom:8px"></div>
+    <div class="row" style="justify-content:flex-end;gap:8px">
+      <button class="btn sm ghost" id="cm_del" onclick="deleteClaim()">ลบเคสนี้</button>
+      <button class="btn sm ghost" onclick="closeClaim()">ยกเลิก</button>
+      <button class="btn sm" onclick="saveClaim()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
 <div id="editModal" class="modal-bg hide">
   <div class="modal">
     <h3 id="em_title">แก้ไขเรท</h3>
@@ -526,6 +583,8 @@ function readCfg(){return{
   poBase:postOver.base,
   poPerkg:postOver.perkg,
   tol:+document.getElementById('cfg_tol').value||0,
+  packg:+document.getElementById('cfg_packg').value||0,
+  packtol:+document.getElementById('cfg_packtol').value||0,
   bkk:document.getElementById('cfg_bkk').value.split(',').map(x=>x.trim().toLowerCase()).filter(Boolean)
 };}
 function destOf(prov){const s=(prov||'').toString().toLowerCase();return cfg().bkk.some(b=>s.includes(b))?'BKK':'UPC';}
@@ -713,8 +772,11 @@ function doAudit(mu,bill){
     const carrierCharge=b?b.cost:NaN, carrierW=(b&&b.w>0)?b.w:NaN;
     const useW=!isNaN(carrierW)?carrierW:rec.ourW;
     const cByCarrier=correctRate({...rec,weight:useW});
-    const cByOurs=correctRate({...rec,weight:rec.ourW});
-    const out={tracking:rec.tracking,order:orderNo,sku:skuList.join(', '),skuCount:skuList.length,carrier:cByCarrier.car,ourW:rec.ourW,carrierW,
+    const ourWPacked=rec.ourW>0?rec.ourW+(c.packg/1000):rec.ourW;   // บวกน้ำหนักบรรจุภัณฑ์
+    const cByOurs=correctRate({...rec,weight:ourWPacked});
+    const diffG=!isNaN(carrierW)?Math.round((carrierW-ourWPacked)*1000):null;   // ส่วนต่างหลังบวกแพ็ก (กรัม)
+    const out={tracking:rec.tracking,order:orderNo,sku:skuList.join(', '),skuCount:skuList.length,carrier:cByCarrier.car,ourW:rec.ourW,ourWPacked,carrierW,
+      diffG,packed:(diffG!=null&&diffG>0&&diffG<=c.packtol),
       wDiff:(!isNaN(carrierW)?Math.round((carrierW-rec.ourW)*100)/100:null),
       cod:rec.codFlag?rec.codAmount:0,correctOurs:cByOurs.rate,correctCarrier:cByCarrier.rate,basis:cByCarrier.basis,
       cr:carrierCharge,rateErr:null,wCost:null,status:'nobill'};
@@ -726,7 +788,10 @@ function doAudit(mu,bill){
       if(carrierCharge<=0){out.status='zero';return out;}   // บิลเก็บ 0 = ยกเลิก/ตีกลับ/ว่าง ไม่ใช่เก็บขาด
       out.rateErr=Math.round((carrierCharge-cByCarrier.rate)*100)/100;
       if(c.autospecial&&out.carrier==='post'&&Math.abs(out.rateErr-c.postspecial)<=tol){out.status='special';}
-      else if(Math.abs(out.rateErr)<=tol){out.status=(out.wCost&&out.wCost>tol)?'weight':'ok';}
+      else if(Math.abs(out.rateErr)<=tol){
+        if(out.wCost&&out.wCost>tol)out.status=out.packed?'packing':'weight';
+        else out.status='ok';
+      }
       else out.status=out.rateErr>0?'over':'under';
     }
     return out;});
@@ -740,8 +805,11 @@ function renderKPI(){
   const over=matched.filter(r=>r.status==='over'),under=matched.filter(r=>r.status==='under'),special=matched.filter(r=>r.status==='special');
   const ok=matched.filter(r=>r.status==='ok');
   const s=a=>a.reduce((x,r)=>x+Math.abs(r.rateErr||0),0);
-  const wcost=matched.reduce((x,r)=>x+(r.wCost||0),0);                 // รวมทุกบิล (เท่า Dashboard)
-  const wcnt=matched.filter(r=>Math.abs(r.wCost||0)>0.001).length;
+  const wOnly=matched.filter(r=>r.status==='weight');
+  const packOnly=matched.filter(r=>r.status==='packing');
+  const wcost=wOnly.reduce((x,r)=>x+(r.wCost||0),0);
+  const wcnt=wOnly.length;
+  const packcost=packOnly.reduce((x,r)=>x+(r.wCost||0),0);
   const correctSum=matched.reduce((x,r)=>x+r.correctOurs,0);           // เฉพาะที่มีบิล (เท่า Dashboard)
   document.getElementById('kpis').innerHTML=
    '<div class="kpi total"><div class="n">'+results.length+'</div><div class="l">พัสดุทั้งหมด</div></div>'+
@@ -750,7 +818,8 @@ function renderKPI(){
     '<div class="kpi ok"><div class="n">'+ok.length+'</div><div class="l">ตรง</div></div>'+
     '<div class="kpi over"><div class="n">'+over.length+'</div><div class="l">เก็บเกิน(เรท) ฿'+s(over).toFixed(0)+'</div></div>'+
     '<div class="kpi under"><div class="n">'+under.length+'</div><div class="l">เก็บขาด(เรท) ฿'+s(under).toFixed(0)+'</div></div>'+
-    '<div class="kpi weight"><div class="n">'+wcnt+'</div><div class="l">นน.ขนส่งชั่งเกิน · จ่ายเกิน ฿'+wcost.toFixed(0)+'</div></div>'+
+    '<div class="kpi weight"><div class="n">'+wcnt+'</div><div class="l">นน.ชั่งเกินผิดปกติ · จ่ายเกิน ฿'+wcost.toFixed(0)+'</div></div>'+
+    '<div class="kpi" style="background:#44607f"><div class="n">'+packOnly.length+'</div><div class="l">รวมน้ำหนักแพ็ก (ปกติ) ฿'+packcost.toFixed(0)+'</div></div>'+
     '<div class="kpi" style="background:#6b4fa3"><div class="n">'+special.length+'</div><div class="l">พื้นที่พิเศษ</div></div>'
     :'<div class="kpi weight"><div class="n">—</div><div class="l">ยังไม่อัปบิล (เห็นเรทที่ควรเป็นก่อน)</div></div>');
 }
@@ -766,7 +835,9 @@ function computeSummary(res){
   const paid=S(m,r=>r.cr),shouldOurs=S(m,r=>r.correctOurs);
   return{n:res.length,matched:m.length,paid,shouldOurs,net:paid-shouldOurs,
     overN:over.length,overSum:S(over,r=>r.rateErr),underN:under.length,underSum:S(under,r=>r.rateErr),
-    weightN:m.filter(r=>Math.abs(r.wCost||0)>0.001).length,weightSum:S(m,r=>r.wCost),specialN:special.length};
+    weightN:m.filter(r=>r.status==='weight').length,weightSum:S(m.filter(r=>r.status==='weight'),r=>r.wCost),
+    packN:m.filter(r=>r.status==='packing').length,packSum:S(m.filter(r=>r.status==='packing'),r=>r.wCost),
+    specialN:special.length};
 }
 async function saveAudit(){
   if(!results.length){alert('ยังไม่มีผลตรวจสอบ — กดตรวจสอบก่อน');return;}
@@ -834,7 +905,9 @@ function renderDashboard(){
   const net=paid-shouldOurs, netCar=paid-shouldCar;
   const over=matched.filter(r=>r.status==='over'),under=matched.filter(r=>r.status==='under'),special=matched.filter(r=>r.status==='special');
   const overSum=S(over,r=>r.rateErr),underSum=S(under,r=>r.rateErr),specialSum=S(special,r=>r.rateErr);
-  const weightSum=S(matched,r=>r.wCost),weightCnt=matched.filter(r=>Math.abs(r.wCost||0)>0.001).length;
+  const wOnly=matched.filter(r=>r.status==='weight'),packOnly=matched.filter(r=>r.status==='packing');
+  const weightSum=S(wOnly,r=>r.wCost),weightCnt=wOnly.length;
+  const packSum=S(packOnly,r=>r.wCost),packCnt=packOnly.length;
   const netColor=net>0.5?'var(--red)':net<-0.5?'var(--green)':'var(--navy)';
   const netLabel=net>0.5?'🔺 จ่ายเกิน (เสียเปรียบ)':net<-0.5?'🔻 จ่ายน้อยกว่าควร (ได้เปรียบ)':'พอดี';
   const byCar=c=>{const a=matched.filter(r=>r.carrier===c);return{n:a.length,paid:S(a,r=>r.cr),ours:S(a,r=>r.correctOurs)};};
@@ -848,7 +921,8 @@ function renderDashboard(){
   '</div>'+
   '<h3 style="color:var(--navy);border-left:4px solid var(--brand);padding-left:10px">แยกสาเหตุ</h3>'+
   '<table><tr><th>สาเหตุ</th><th>จำนวน</th><th>เงิน</th><th>ทำอะไรได้</th></tr>'+
-   '<tr><td style="text-align:left">🟦 น้ำหนักขนส่งชั่งต่างจากเรา</td><td>'+weightCnt.toLocaleString('th-TH')+'</td><td style="color:'+col(weightSum)+';font-weight:700">'+sg(weightSum)+'</td><td style="text-align:left">ต้องสุ่มชั่งพิสูจน์ก่อน</td></tr>'+
+   '<tr><td style="text-align:left">🟦 น้ำหนักชั่งเกินผิดปกติ</td><td>'+weightCnt.toLocaleString('th-TH')+'</td><td style="color:'+col(weightSum)+';font-weight:700">'+sg(weightSum)+'</td><td style="text-align:left">ต้องสุ่มชั่งพิสูจน์ก่อน</td></tr>'+
+   '<tr><td style="text-align:left">📦 รวมน้ำหนักแพ็ก (ถือว่าปกติ)</td><td>'+packCnt.toLocaleString('th-TH')+'</td><td style="color:'+col(packSum)+';font-weight:700">'+sg(packSum)+'</td><td style="text-align:left">ส่วนต่างอยู่ในเกณฑ์บรรจุภัณฑ์</td></tr>'+
    '<tr><td style="text-align:left">🟥 ขนส่งคิดเรทเกิน</td><td>'+over.length+'</td><td style="color:var(--red);font-weight:700">'+sg(overSum)+'</td><td style="text-align:left">เคลมเงินคืนได้</td></tr>'+
    '<tr><td style="text-align:left">🟧 ขนส่งคิดเรทขาด</td><td>'+under.length+'</td><td style="color:var(--green);font-weight:700">'+sg(underSum)+'</td><td style="text-align:left">เราได้เปรียบ</td></tr>'+
    '<tr><td style="text-align:left">🟪 พื้นที่พิเศษ</td><td>'+special.length+'</td><td style="font-weight:700">'+sg(specialSum)+'</td><td style="text-align:left">ค่าใช้จ่ายปกติ (เลี่ยงไม่ได้)</td></tr>'+
@@ -866,7 +940,7 @@ function renderAlert(){
   const box=document.getElementById('alertBox');
   const wb=results.filter(r=>r.cr!=null&&!isNaN(r.cr));
   const over=wb.filter(r=>r.status==='over'),under=wb.filter(r=>r.status==='under');
-  const weight=wb.filter(r=>r.correctOurs!=null&&r.status!=='zero'&&Math.abs(r.wCost||0)>0.001);
+  const weight=wb.filter(r=>r.status==='weight');
   const err=results.filter(r=>r.status==='err');
   const nobill=(flashBillData||postBillData)?results.filter(r=>r.status==='nobill'):[];
   const s=a=>a.reduce((x,r)=>x+Math.abs(r.rateErr||0),0).toLocaleString('th-TH',{maximumFractionDigits:0});
@@ -887,8 +961,8 @@ function renderAlert(){
   else{box.className='';box.innerHTML='';}
 }
 function jumpTo(f){document.getElementById('flt').value=f;renderTable();document.getElementById('resTbl').scrollIntoView({behavior:'smooth',block:'start'});}
-const cls={ok:'ok',over:'over',under:'under',weight:'weight',special:'special',err:'err',skip:'skip',nobill:'nobill',zero:'skip',unknowncar:'err'};
-const badge={ok:'🟩 ตรง',over:'🟥 เก็บเกิน',under:'🟧 เก็บขาด',weight:'🟦 นน.ชั่งเกิน',special:'🟪 พื้นที่พิเศษ',err:'⬜ คำนวณไม่ได้',skip:'⬜ รับเอง',nobill:'⬜ ยังไม่มีบิล',zero:'⬜ ยอดเก็บ 0 (ตรวจ)',unknowncar:'❓ อ่านขนส่งไม่ออก'};
+const cls={ok:'ok',over:'over',under:'under',weight:'weight',special:'special',err:'err',skip:'skip',nobill:'nobill',zero:'skip',unknowncar:'err',packing:'skip'};
+const badge={ok:'🟩 ตรง',over:'🟥 เก็บเกิน',under:'🟧 เก็บขาด',weight:'🟦 นน.ชั่งเกิน',special:'🟪 พื้นที่พิเศษ',err:'⬜ คำนวณไม่ได้',skip:'⬜ รับเอง',nobill:'⬜ ยังไม่มีบิล',zero:'⬜ ยอดเก็บ 0 (ตรวจ)',unknowncar:'❓ อ่านขนส่งไม่ออก',packing:'📦 รวมน้ำหนักแพ็ก'};
 function renderTable(){
   const f=document.getElementById('flt').value;let rows=results;
   if(f==='prob')rows=results.filter(r=>r.status==='over'||r.status==='under'||(r.correctOurs!=null&&r.status!=='zero'&&Math.abs(r.wCost||0)>0.001));
@@ -897,17 +971,20 @@ function renderTable(){
   document.getElementById('cntInfo').textContent='แสดง '+rows.length+' / '+results.length;
   const fmt=v=>v==null||isNaN(v)?'–':(+v).toLocaleString('th-TH',{maximumFractionDigits:2});
   const sg=v=>v==null?'–':(v>0?'+':'')+fmt(v);
-  let h='<tr><th>เลขพัสดุ</th><th>SKU</th><th>ขนส่ง</th><th>นน.เรา<br>(บันทึก)</th><th>นน.ขนส่ง<br>(ชั่งจริง)</th><th>Δนน.</th><th>COD</th><th>เรทของเรา<br>(จากนน.เรา)</th><th>เรทควรเป็น<br>(จากนน.ขนส่ง)</th><th>💰 เราจ่ายจริง</th><th>ต่าง(เรท)</th><th>ส่วนเกินจากนน.</th><th>สถานะ</th></tr>';
+  let h='<tr><th>เลขพัสดุ</th><th>SKU</th><th>ขนส่ง</th><th>นน.เรา<br>(บันทึก)</th><th>นน.ขนส่ง<br>(ชั่งจริง)</th><th>Δนน.</th><th>COD</th><th>เรทของเรา<br>(จากนน.เรา)</th><th>เรทควรเป็น<br>(จากนน.ขนส่ง)</th><th>💰 เราจ่ายจริง</th><th>ต่าง(เรท)</th><th>ส่วนเกินจากนน.</th><th>สถานะ</th><th>เคส</th></tr>';
+  const clCell=r=>{const t=trk(r.tracking);if(!t)return '–';const ex=claimMap[t];
+    return ex?'<button class="pencil" title="'+(CL_LABEL[ex.status]||'')+(ex.note?' · '+String(ex.note).replace(/"/g,'&quot;'):'')+'" onclick="openClaim(\''+t+'\')" style="background:'+CL_COLOR[ex.status]+';color:#fff;border-color:'+CL_COLOR[ex.status]+'">●</button>'
+             :'<button class="pencil" title="บันทึกผลการตรวจสอบ" onclick="openClaim(\''+t+'\')">📝</button>';};
   const skuCell=r=>{const s=r.sku||'';if(!s)return '–';const esc=s.replace(/</g,'&lt;');
     return '<span title="'+esc.replace(/"/g,'&quot;')+'" style="font-size:11px">'+(esc.length>28?esc.slice(0,28)+'…':esc)+'</span>';};
-  h+=rows.slice(0,4000).map(r=>'<tr class="'+cls[r.status]+'"><td>'+(r.tracking||'–')+'</td><td>'+skuCell(r)+'</td><td>'+(r.carrier==='flash'?'Flash':r.carrier==='post'?'ปณ':r.carrier==='unknown'?'❓':'รับเอง')+'</td><td>'+fmt(r.ourW)+'</td><td>'+fmt(r.carrierW)+'</td><td>'+(r.wDiff!=null&&r.wDiff>0?'<b style="color:var(--red)">'+sg(r.wDiff)+'</b>':sg(r.wDiff))+'</td><td>'+(r.cod?fmt(r.cod):'–')+'</td><td>'+fmt(r.correctOurs)+'</td><td title="'+String(r.basis||'').replace(/"/g,'&quot;')+'"><b>'+fmt(r.correctCarrier)+'</b></td><td>'+fmt(r.cr)+'</td><td><b>'+sg(r.rateErr)+'</b></td><td>'+(r.wCost&&r.wCost>0?'<b style="color:var(--blue)">'+sg(r.wCost)+'</b>':sg(r.wCost))+'</td><td>'+badge[r.status]+'</td></tr>').join('');
+  h+=rows.slice(0,4000).map(r=>'<tr class="'+cls[r.status]+'"><td>'+(r.tracking||'–')+'</td><td>'+skuCell(r)+'</td><td>'+(r.carrier==='flash'?'Flash':r.carrier==='post'?'ปณ':r.carrier==='unknown'?'❓':'รับเอง')+'</td><td>'+fmt(r.ourW)+'</td><td>'+fmt(r.carrierW)+'</td><td>'+(r.wDiff!=null&&r.wDiff>0?'<b style="color:var(--red)">'+sg(r.wDiff)+'</b>':sg(r.wDiff))+'</td><td>'+(r.cod?fmt(r.cod):'–')+'</td><td>'+fmt(r.correctOurs)+'</td><td title="'+String(r.basis||'').replace(/"/g,'&quot;')+'"><b>'+fmt(r.correctCarrier)+'</b></td><td>'+fmt(r.cr)+'</td><td><b>'+sg(r.rateErr)+'</b></td><td>'+(r.wCost&&r.wCost>0?'<b style="color:var(--blue)">'+sg(r.wCost)+'</b>':sg(r.wCost))+'</td><td>'+badge[r.status]+'</td><td>'+clCell(r)+'</td></tr>').join('');
   document.getElementById('resTbl').innerHTML=h;
 }
 const ST_EXPORT={
   ok:['ตรง','E2EFDA','1E7145'],over:['เก็บเกิน','FCE4EC','C00000'],under:['เก็บขาด','FFF3CC','7A5C00'],
   weight:['นน.ชั่งเกิน','D6E4F0','1F3864'],special:['พื้นที่พิเศษ','E9E2F5','5B3E8E'],
   zero:['ยอดเก็บ 0','F0F0F0','666666'],nobill:['ยังไม่มีบิล','F5F5F5','888888'],
-  skip:['รับเอง','F5F5F5','888888'],err:['คำนวณไม่ได้','EEEEEE','888888'],unknowncar:['อ่านขนส่งไม่ออก','FDE9D9','9C4500']};
+  skip:['รับเอง','F5F5F5','888888'],err:['คำนวณไม่ได้','EEEEEE','888888'],unknowncar:['อ่านขนส่งไม่ออก','FDE9D9','9C4500'],packing:['รวมน้ำหนักแพ็ก','EDF3FA','44607F']};
 const XB={top:{style:'thin',color:{rgb:'D9D9D9'}},bottom:{style:'thin',color:{rgb:'D9D9D9'}},left:{style:'thin',color:{rgb:'D9D9D9'}},right:{style:'thin',color:{rgb:'D9D9D9'}}};
 function styleHeader(ws,ncol){for(let C=0;C<ncol;C++){const a=XLSX.utils.encode_cell({r:0,c:C});if(ws[a])ws[a].s={fill:{fgColor:{rgb:'1F3864'}},font:{color:{rgb:'FFFFFF'},bold:true,sz:11},alignment:{horizontal:'center',vertical:'center',wrapText:true},border:XB};}}
 function buildAuditSheet(rows){
@@ -951,7 +1028,9 @@ function exportResult(){
   const paid=Sm(matched,r=>r.cr), shouldOurs=Sm(matched,r=>r.correctOurs), net=paid-shouldOurs;
   const over=matched.filter(r=>r.status==='over'),under=matched.filter(r=>r.status==='under'),special=matched.filter(r=>r.status==='special');
   const overSum=Sm(over,r=>r.rateErr),underSum=Sm(under,r=>r.rateErr),specialSum=Sm(special,r=>r.rateErr);
-  const weightSum=Sm(matched,r=>r.wCost),weightCnt=matched.filter(r=>Math.abs(r.wCost||0)>0.001).length;
+  const wOnlyX=matched.filter(r=>r.status==='weight'),packOnlyX=matched.filter(r=>r.status==='packing');
+  const weightSum=Sm(wOnlyX,r=>r.wCost),weightCnt=wOnlyX.length;
+  const packSumX=Sm(packOnlyX,r=>r.wCost),packCntX=packOnlyX.length;
   const byCar=c=>{const a=matched.filter(r=>r.carrier===c);return{n:a.length,paid:Sm(a,r=>r.cr),ours:Sm(a,r=>r.correctOurs)};};
   const fl=byCar('flash'),po=byCar('post');
   // [label, count, money, kind]  kind: 'sec' | 'net' | status | ''
@@ -961,7 +1040,8 @@ function exportResult(){
     ['✅ ที่ควรจ่าย (ตามน้ำหนักที่เราบันทึก)','',money0(shouldOurs),''],
     ['จ่ายเกินสุทธิ (บวก=เสียเปรียบ / ลบ=ได้เปรียบ)','',money0(net),'net'],
     ['▌ แยกสาเหตุ','','','sec'],
-    ['🟦 น้ำหนักขนส่งชั่งต่างจากเรา (ต้องพิสูจน์)',weightCnt,money0(weightSum),'weight'],
+    ['🟦 น้ำหนักชั่งเกินผิดปกติ (ต้องพิสูจน์)',weightCnt,money0(weightSum),'weight'],
+    ['📦 รวมน้ำหนักแพ็ก (ถือว่าปกติ)',packCntX,money0(packSumX),'packing'],
     ['🟥 ขนส่งคิดเรทเกิน (เคลมคืนได้)',over.length,money0(overSum),'over'],
     ['🟧 ขนส่งคิดเรทขาด (เราได้เปรียบ)',under.length,money0(underSum),'under'],
     ['🟪 พื้นที่พิเศษ (ค่าใช้จ่ายปกติ)',special.length,money0(specialSum),'special'],
@@ -978,7 +1058,8 @@ function exportResult(){
     ['ยอดเก็บ 0 (ยกเลิก/ตีกลับ)',results.filter(r=>r.status==='zero').length,'','zero'],
     ['ยังไม่มีบิล',results.filter(r=>r.status==='nobill').length,'','nobill'],
     ['รับเอง',results.filter(r=>r.status==='skip').length,'','skip'],
-    ['❓ อ่านขนส่งไม่ออก',results.filter(r=>r.status==='unknowncar').length,'','unknowncar']];
+    ['❓ อ่านขนส่งไม่ออก',results.filter(r=>r.status==='unknowncar').length,'','unknowncar'],
+    ['📦 รวมน้ำหนักแพ็ก',results.filter(r=>r.status==='packing').length,'','packing']];
   const sums=XLSX.utils.aoa_to_sheet(S.map(r=>r.slice(0,3)));
   sums['!cols']=[{wch:46},{wch:12},{wch:15}];
   styleHeader(sums,3);
@@ -1019,6 +1100,184 @@ function renderPostEdit(){
 function addFlashRow(){const l=flashRates[flashRates.length-1];flashRates.push([l[0]+1,l[1],l[2]]);renderFlashEdit();openEdit('flash',flashRates.length-1,true);}
 function resetFlash(){if(confirm('รีเซ็ตเรท Flash กลับค่าเริ่มต้นทั้งหมด?')){flashRates=FLASH_DEFAULT.map(r=>r.slice());saveRates();renderFlashEdit();}}
 function resetPost(){if(confirm('รีเซ็ตเรทไปรษณีย์กลับค่าเริ่มต้นทั้งหมด?')){postRates=POST_DEFAULT.map(r=>r.slice());postOver={base:160,perkg:15};saveRates();renderPostEdit();}}
+
+/* ===== ระบบติดตามเคลม (เก็บบน Supabase ทุกคนเห็นตรงกัน) ===== */
+let claimMap={}, claimTarget=null, claimsLoaded=false;
+const CL_LABEL={open:'รอตรวจสอบ',checked:'ตรวจสอบแล้ว',submitted:'ส่งเคลมแล้ว',received:'ได้รับเงินคืนแล้ว',rejected:'เคลมไม่ได้'};
+const CL_COLOR={open:'#888888',checked:'#2E75B6',submitted:'#C9A84C',received:'#1E7145',rejected:'#C00000'};
+const todayISO=()=>new Date().toISOString().slice(0,10);
+const money=v=>(+v||0).toLocaleString('th-TH',{maximumFractionDigits:2});
+
+async function loadClaims(notify){
+  const c=sbClient();if(!c){if(notify)alert('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้');return;}
+  try{
+    const {data,error}=await c.from('claim_notes').select('*').order('updated_at',{ascending:false});
+    if(error)throw error;
+    claimMap={};(data||[]).forEach(r=>claimMap[r.tracking]=r);
+    claimsLoaded=true;renderClaims();
+    if(results&&results.length)renderTable();
+    if(notify)alert('โหลดข้อมูลเคลมแล้ว '+(data||[]).length+' รายการ');
+  }catch(e){if(notify)alert('โหลดไม่สำเร็จ: '+(e.message||e)+'\n\n(ตรวจว่ารัน SQL สร้างตาราง claim_notes แล้ว)');}
+}
+
+function openClaim(tracking){
+  const t=trk(tracking);if(!t){alert('รายการนี้ไม่มีเลขพัสดุ บันทึกเคสไม่ได้');return;}
+  const row=(results||[]).find(r=>trk(r.tracking)===t)||{};
+  const ex=claimMap[t]||null;claimTarget={tracking:t,row};
+  document.getElementById('cm_title').textContent=(ex?'แก้ไขเคส · ':'บันทึกเคสใหม่ · ')+t;
+  const suggest=row.rateErr>0?row.rateErr:(row.wCost>0?row.wCost:0);
+  document.getElementById('cm_info').innerHTML=
+    'ขนส่ง: '+(row.carrier==='post'?'ไปรษณีย์':row.carrier==='flash'?'Flash':'-')+
+    ' · ออเดอร์: '+(row.order||'-')+
+    ' · เราจ่ายจริง '+money(row.cr)+' บาท · ควรเป็น '+money(row.correctCarrier)+' บาท'+
+    (row.sku?'<br>สินค้า: '+String(row.sku).replace(/</g,'&lt;'):'');
+  document.getElementById('cm_status').value=ex?ex.status:'checked';
+  document.getElementById('cm_date').value=ex&&ex.bill_date?ex.bill_date:todayISO();
+  document.getElementById('cm_claim').value=ex?ex.claim_amount:(Math.round(suggest*100)/100||0);
+  document.getElementById('cm_recv').value=ex?ex.received_amount:0;
+  document.getElementById('cm_note').value=ex?(ex.note||''):'';
+  document.getElementById('cm_meta').textContent=ex&&ex.updated_at?('แก้ล่าสุดโดย '+(ex.updated_by||'ไม่ระบุ')+' เมื่อ '+new Date(ex.updated_at).toLocaleString('th-TH')):'';
+  document.getElementById('cm_del').style.display=ex?'inline-block':'none';
+  document.getElementById('claimModal').classList.remove('hide');
+}
+function closeClaim(){document.getElementById('claimModal').classList.add('hide');claimTarget=null;}
+
+async function saveClaim(){
+  if(!claimTarget)return;
+  const c=sbClient();if(!c){alert('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ บันทึกไม่ได้');return;}
+  const row=claimTarget.row||{};
+  let who='';try{const {data}=await c.auth.getUser();who=(data&&data.user&&data.user.email)||'';}catch(e){}
+  const rec={tracking:claimTarget.tracking,
+    order_no:String(row.order||''),carrier:row.carrier||'',sku:String(row.sku||''),
+    bill_date:document.getElementById('cm_date').value||todayISO(),
+    status:document.getElementById('cm_status').value,
+    claim_amount:+document.getElementById('cm_claim').value||0,
+    received_amount:+document.getElementById('cm_recv').value||0,
+    charged:isNaN(row.cr)?null:row.cr, should_be:row.correctCarrier==null?null:row.correctCarrier,
+    note:document.getElementById('cm_note').value||'',
+    updated_by:who,updated_at:new Date().toISOString()};
+  showLoading('กำลังบันทึก...');
+  try{
+    const {error}=await c.from('claim_notes').upsert(rec,{onConflict:'tracking'});
+    if(error)throw error;
+    claimMap[rec.tracking]=rec;hideLoading();closeClaim();renderClaims();renderTable();
+  }catch(e){hideLoading();alert('บันทึกไม่สำเร็จ: '+(e.message||e));}
+}
+async function deleteClaim(){
+  if(!claimTarget||!confirm('ลบเคสของพัสดุนี้?'))return;
+  const c=sbClient();if(!c)return;showLoading('กำลังลบ...');
+  try{const {error}=await c.from('claim_notes').delete().eq('tracking',claimTarget.tracking);
+    if(error)throw error;delete claimMap[claimTarget.tracking];hideLoading();closeClaim();renderClaims();renderTable();}
+  catch(e){hideLoading();alert('ลบไม่สำเร็จ: '+(e.message||e));}
+}
+
+/* บันทึกทุกรายการที่เก็บเกินเป็นเคสทีเดียว */
+async function claimAllOver(){
+  const targets=(results||[]).filter(r=>r.status==='over'&&trk(r.tracking)&&!claimMap[trk(r.tracking)]);
+  if(!targets.length){alert('ไม่มีรายการเก็บเกินที่ยังไม่ได้บันทึกเป็นเคส');return;}
+  const d=prompt('บันทึก '+targets.length+' รายการที่ขนส่งเก็บเกิน เป็นเคส "รอตรวจสอบ"\n\nระบุวันที่รอบบิล (ปี-เดือน-วัน):',todayISO());
+  if(!d)return;
+  const c=sbClient();if(!c){alert('เชื่อมต่อเซิร์ฟเวอร์ไม่ได้');return;}
+  let who='';try{const {data}=await c.auth.getUser();who=(data&&data.user&&data.user.email)||'';}catch(e){}
+  const now=new Date().toISOString();
+  const recs=targets.map(r=>({tracking:trk(r.tracking),order_no:String(r.order||''),carrier:r.carrier||'',sku:String(r.sku||''),
+    bill_date:d,status:'open',claim_amount:Math.round((r.rateErr||0)*100)/100,received_amount:0,
+    charged:isNaN(r.cr)?null:r.cr,should_be:r.correctCarrier==null?null:r.correctCarrier,note:'',updated_by:who,updated_at:now}));
+  showLoading('กำลังบันทึก '+recs.length+' เคส...');
+  try{
+    for(let i=0;i<recs.length;i+=200){
+      const {error}=await c.from('claim_notes').upsert(recs.slice(i,i+200),{onConflict:'tracking'});
+      if(error)throw error;
+    }
+    recs.forEach(r=>claimMap[r.tracking]=r);
+    hideLoading();renderClaims();renderTable();alert('บันทึกแล้ว '+recs.length+' เคส — ดูได้ที่แท็บ "ติดตามเคลม"');
+  }catch(e){hideLoading();alert('บันทึกไม่สำเร็จ: '+(e.message||e));}
+}
+
+function claimList(){return Object.values(claimMap);}
+function renderClaims(){
+  const all=claimList();
+  const dsel=document.getElementById('clDate');
+  if(dsel){
+    const dates=[...new Set(all.map(r=>r.bill_date).filter(Boolean))].sort().reverse();
+    const cur=dsel.value;
+    dsel.innerHTML='<option value="all">ทั้งหมด</option>'+dates.map(d=>'<option value="'+d+'">'+d+'</option>').join('');
+    if(dates.includes(cur)||cur==='all')dsel.value=cur;
+  }
+  /* KPI รวม */
+  const claimSum=all.reduce((x,r)=>x+(+r.claim_amount||0),0);
+  const recvSum=all.reduce((x,r)=>x+(+r.received_amount||0),0);
+  const pending=all.filter(r=>r.status!=='received'&&r.status!=='rejected');
+  const pendSum=pending.reduce((x,r)=>x+((+r.claim_amount||0)-(+r.received_amount||0)),0);
+  document.getElementById('claimKpi').innerHTML=
+    '<div class="kpi total"><div class="n">'+all.length+'</div><div class="l">เคสทั้งหมด</div></div>'+
+    '<div class="kpi info"><div class="n">฿'+money(claimSum)+'</div><div class="l">ยอดขอเคลมรวม</div></div>'+
+    '<div class="kpi ok"><div class="n">฿'+money(recvSum)+'</div><div class="l">ได้รับเงินคืนแล้ว</div></div>'+
+    '<div class="kpi over"><div class="n">฿'+money(pendSum)+'</div><div class="l">คงค้าง '+pending.length+' เคส</div></div>'+
+    '<div class="kpi weight"><div class="n">'+all.filter(r=>r.status==='submitted').length+'</div><div class="l">ส่งเคลมแล้ว รอผล</div></div>';
+
+  /* สรุปตามวันที่ */
+  const by={};
+  all.forEach(r=>{const d=r.bill_date||'ไม่ระบุวันที่';(by[d]=by[d]||[]).push(r);});
+  let sh='<tr><th>วันที่รอบบิล</th><th>จำนวนเคส</th><th>ยอดขอเคลม</th><th>ตรวจสอบแล้ว</th><th>ส่งเคลมแล้ว</th><th>ได้เงินคืน</th><th>คงค้าง</th></tr>';
+  Object.keys(by).sort().reverse().forEach(d=>{
+    const g=by[d],cs=g.reduce((x,r)=>x+(+r.claim_amount||0),0),rv=g.reduce((x,r)=>x+(+r.received_amount||0),0);
+    const pd=g.filter(r=>r.status!=='received'&&r.status!=='rejected').reduce((x,r)=>x+((+r.claim_amount||0)-(+r.received_amount||0)),0);
+    sh+='<tr><td><b>'+d+'</b></td><td>'+g.length+'</td><td>฿'+money(cs)+'</td>'+
+        '<td>'+g.filter(r=>r.status==='checked').length+'</td>'+
+        '<td>'+g.filter(r=>r.status==='submitted').length+'</td>'+
+        '<td style="color:#1E7145;font-weight:700">'+g.filter(r=>r.status==='received').length+' · ฿'+money(rv)+'</td>'+
+        '<td style="color:var(--red);font-weight:700">฿'+money(pd)+'</td></tr>';
+  });
+  if(!all.length)sh+='<tr><td colspan="7" class="muted">ยังไม่มีเคส — ไปแท็บ "ตรวจสอบชุด" แล้วกดปุ่มบันทึกเคสที่แถวรายการ</td></tr>';
+  document.getElementById('clSumTbl').innerHTML=sh;
+
+  /* รายการ */
+  const f=document.getElementById('clFlt').value, dv=document.getElementById('clDate').value;
+  const q=(document.getElementById('clSearch').value||'').trim().toUpperCase();
+  let rows=all.filter(r=>(f==='all'||r.status===f)&&(dv==='all'||r.bill_date===dv));
+  if(q)rows=rows.filter(r=>(r.tracking||'').includes(q)||(r.order_no||'').toUpperCase().includes(q));
+  rows.sort((a,b)=>(b.bill_date||'').localeCompare(a.bill_date||''));
+  let h='<tr><th>เลขพัสดุ</th><th>ออเดอร์</th><th>ขนส่ง</th><th>วันที่รอบบิล</th><th>ยอดขอเคลม</th><th>ได้คืนแล้ว</th><th>สถานะ</th><th>หมายเหตุ</th><th>ผู้บันทึก</th><th>แก้ไข</th></tr>';
+  h+=rows.map(r=>'<tr><td>'+r.tracking+'</td><td>'+(r.order_no||'–')+'</td>'+
+    '<td>'+(r.carrier==='post'?'ไปรษณีย์':r.carrier==='flash'?'Flash':'–')+'</td>'+
+    '<td>'+(r.bill_date||'–')+'</td><td>฿'+money(r.claim_amount)+'</td>'+
+    '<td style="color:#1E7145">฿'+money(r.received_amount)+'</td>'+
+    '<td><b style="color:'+CL_COLOR[r.status]+'">'+(CL_LABEL[r.status]||r.status)+'</b></td>'+
+    '<td style="text-align:left;font-size:12px">'+String(r.note||'').replace(/</g,'&lt;')+'</td>'+
+    '<td style="font-size:11px">'+String(r.updated_by||'').split('@')[0]+'</td>'+
+    '<td><button class="pencil" onclick="openClaim(\''+r.tracking+'\')">✏️</button></td></tr>').join('');
+  if(!rows.length)h+='<tr><td colspan="10" class="muted">ไม่มีรายการตามเงื่อนไขที่เลือก</td></tr>';
+  document.getElementById('clTbl').innerHTML=h;
+}
+
+function exportClaims(){
+  const all=claimList();
+  if(!all.length){alert('ยังไม่มีเคสให้ส่งออก');return;}
+  const wb=XLSX.utils.book_new();
+  const aoa=[['เลขพัสดุ','ออเดอร์','ขนส่ง','สินค้า','วันที่รอบบิล','เราจ่ายจริง','ควรเป็น','ยอดขอเคลม','ได้คืนแล้ว','คงค้าง','สถานะ','หมายเหตุ','ผู้บันทึก','แก้ล่าสุด']];
+  all.sort((a,b)=>(b.bill_date||'').localeCompare(a.bill_date||'')).forEach(r=>aoa.push([
+    r.tracking,r.order_no||'',r.carrier==='post'?'ไปรษณีย์':r.carrier==='flash'?'Flash':'',r.sku||'',r.bill_date||'',
+    r.charged==null?'':+r.charged,r.should_be==null?'':+r.should_be,+r.claim_amount||0,+r.received_amount||0,
+    (r.status==='received'||r.status==='rejected')?0:((+r.claim_amount||0)-(+r.received_amount||0)),
+    CL_LABEL[r.status]||r.status,r.note||'',r.updated_by||'',r.updated_at?new Date(r.updated_at).toLocaleString('th-TH'):'']));
+  const ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols']=[{wch:18},{wch:16},{wch:10},{wch:26},{wch:13},{wch:11},{wch:10},{wch:12},{wch:12},{wch:11},{wch:18},{wch:40},{wch:18},{wch:20}];
+  XLSX.utils.book_append_sheet(wb,ws,'ติดตามเคลม');
+  /* สรุปตามวัน */
+  const by={};all.forEach(r=>{const d=r.bill_date||'ไม่ระบุ';(by[d]=by[d]||[]).push(r);});
+  const s2=[['วันที่รอบบิล','จำนวนเคส','ยอดขอเคลม','ตรวจสอบแล้ว','ส่งเคลมแล้ว','ได้เงินคืน (เคส)','ได้เงินคืน (บาท)','คงค้าง (บาท)']];
+  Object.keys(by).sort().reverse().forEach(d=>{const g=by[d];
+    s2.push([d,g.length,g.reduce((x,r)=>x+(+r.claim_amount||0),0),
+      g.filter(r=>r.status==='checked').length,g.filter(r=>r.status==='submitted').length,
+      g.filter(r=>r.status==='received').length,g.reduce((x,r)=>x+(+r.received_amount||0),0),
+      g.filter(r=>r.status!=='received'&&r.status!=='rejected').reduce((x,r)=>x+((+r.claim_amount||0)-(+r.received_amount||0)),0)]);});
+  const ws2=XLSX.utils.aoa_to_sheet(s2);ws2['!cols']=[{wch:16},{wch:11},{wch:13},{wch:13},{wch:13},{wch:15},{wch:15},{wch:14}];
+  XLSX.utils.book_append_sheet(wb,ws2,'สรุปตามวันที่');
+  XLSX.writeFile(wb,'ติดตามเคลม_'+todayISO()+'.xlsx');
+}
+
+
 
 /* ===== EDIT MODAL (ดินสอ + ยืนยัน) ===== */
 let editTarget={table:null,index:null,isNew:false};
@@ -1087,7 +1346,7 @@ const SIGNUP_CODE='MASARU-CS';   // รหัสเชิญสำหรับ�
 function showAuth(){document.getElementById('authScreen').classList.remove('hide');}
 function hideAuth(session){document.getElementById('authScreen').classList.add('hide');
   const u=document.getElementById('userEmail');if(u&&session&&session.user)u.textContent=session.user.email;
-  loadRates();}
+  loadRates();loadClaims();}
 (function initAuth(){
   const c=sbClient();const $=id=>document.getElementById(id);
   if(!c){$('authScreen').innerHTML='<div class="auth-card"><h2>เชื่อมต่อไม่ได้</h2><div class="asub">โหลด Supabase ไม่สำเร็จ — เช็คอินเทอร์เน็ต</div></div>';return;}
