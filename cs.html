@@ -1161,7 +1161,7 @@ async function saveClaim(){
     const {error}=await c.from('claim_notes').upsert(rec,{onConflict:'tracking'});
     if(error)throw error;
     claimMap[rec.tracking]=rec;hideLoading();closeClaim();renderClaims();renderTable();
-  }catch(e){hideLoading();alert('บันทึกไม่สำเร็จ: '+(e.message||e));}
+  }catch(e){hideLoading();setTimeout(()=>alert('บันทึกไม่สำเร็จ: '+(e.message||e)),80);}
 }
 async function deleteClaim(){
   if(!claimTarget||!confirm('ลบเคสของพัสดุนี้?'))return;
