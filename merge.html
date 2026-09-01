@@ -283,7 +283,7 @@ const JST_MAP={
   'name'               :{src:'J',col:'AI',fmt:'text'},
   'phone'              :{src:'J',col:'BU',fmt:'phone'},
   'address'            :{src:'J',col:'AH',fmt:'textc'},
-  'post office'        :{src:'J',col:'AJ',fmt:'text'},
+  'post office'        :{src:'J',col:'AJ',fmt:'num'},
   'sku'                :{src:'J',col:'C' ,fmt:'text'}
 };
 function baseMap(extra){
@@ -526,15 +526,29 @@ function render(){
   });
   $('tbl').innerHTML=h;
 }
+/* 'YYYY-MM-DD' / 'YYYY-MM-DD HH:mm:ss' -> Date เพื่อให้ Excel เก็บเป็นเซลล์วันที่ */
+function toDateCell(v){
+  const m=String(v).match(/^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2}):(\d{2}))?$/);
+  if(!m)return v;
+  return new Date(+m[1],+m[2]-1,+m[3],+(m[4]||0),+(m[5]||0),+(m[6]||0));
+}
 function download(){
   const r=results[carrier];if(!r)return;
-  const data=r.rows.map(function(x){const o={};TEMPLATE.forEach(function(c2){o[c2]=x[c2];});return o;});
-  const ws=XLSX.utils.json_to_sheet(data,{header:TEMPLATE});
+  const c=C();
+  const dateCols={};
+  TEMPLATE.forEach(function(t){const f=(c.map[t]||{}).fmt;if(f==='date'||f==='dateonly')dateCols[t]=1;});
+  if((c.map['Pickup date']||{}).src==='H')dateCols['Pickup date']=1;
+  const data=r.rows.map(function(x){
+    const o={};
+    TEMPLATE.forEach(function(c2){o[c2]=(dateCols[c2]&&x[c2])?toDateCell(x[c2]):x[c2];});
+    return o;
+  });
+  const ws=XLSX.utils.json_to_sheet(data,{header:TEMPLATE,cellDates:true});
   ws['!cols']=[14,17,17,20,20,15,22,12,52,32,22,9,10].map(w=>({wch:w}));
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,ws,'Sheet1');
   const d=new Date();
-  XLSX.writeFile(wb,'CS_upload_'+CARRIERS[carrier].file+'_'+pad(d.getDate())+'-'+pad(d.getMonth()+1)+'-'+d.getFullYear()+'.xlsx');
+  XLSX.writeFile(wb,'CS_upload_'+CARRIERS[carrier].file+'_'+pad(d.getDate())+'-'+pad(d.getMonth()+1)+'-'+d.getFullYear()+'.xlsx',{cellDates:true});
 }
 
 /* ===================== MAPPING UI ===================== */
