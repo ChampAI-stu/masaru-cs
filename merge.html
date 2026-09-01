@@ -136,7 +136,7 @@
   <div id="tab-merge">
     <div class="card">
       <h2><span class="num">1</span> อัปโหลดไฟล์</h2>
-      <div class="sub2">ลากไฟล์มาวาง หรือคลิกเพื่อเลือก · ระบบตรวจชนิดไฟล์อัตโนมัติจากหัวตาราง (วางสลับช่องได้)</div>
+      <div class="sub2">ลากไฟล์มาวาง หรือคลิกเพื่อเลือก · ระบบตรวจชนิดไฟล์อัตโนมัติจากหัวตาราง (วางสลับช่องได้) · <b>อัปแค่ 2 ไฟล์นี้</b> ไฟล์ที่ 3 คือผลลัพธ์ที่ระบบสร้างให้</div>
       <div class="drops">
         <div class="drop" id="dropF" data-slot="F">
           <div class="t">📦 ไฟล์ที่ 1 — ขนส่ง (Flash)</div>
@@ -345,8 +345,12 @@ function readSheet(file){
 }
 function detect(rows){
   const j=(rows[0]||[]).map(x=>clean(x).toLowerCase()).join('|');
-  if(j.indexOf('เลขพัสดุ')>=0||j.indexOf('หมายเลขคำสั่งซื้อออนไลน์')>=0)return 'J';
-  if(j.indexOf('tracking no.')>=0||j.indexOf('total charge')>=0||j.indexOf('pu time')>=0)return 'F';
+  /* ไฟล์ที่ 3 (ฟอร์แมตผลลัพธ์) — ต้องเช็คก่อน เพราะมีคำว่า tracking no. เหมือนไฟล์ Flash */
+  if(j.indexOf('post office')>=0&&j.indexOf('sku')>=0&&j.indexOf('cod amt')>=0&&j.indexOf('total charge')<0)return 'T';
+  /* ไฟล์ JST */
+  if(j.indexOf('เลขพัสดุ')>=0||j.indexOf('หมายเลขคำสั่งซื้อออนไลน์')>=0||j.indexOf('บริษัทขนส่ง')>=0)return 'J';
+  /* ไฟล์ขนส่ง (Flash) — ใช้หัวตารางเฉพาะของ Flash ไม่ใช้ tracking no. ลอย ๆ */
+  if(j.indexOf('pu time')>=0||j.indexOf('total charge')>=0||j.indexOf('chargeable weight')>=0||j.indexOf('the original tracking no.')>=0)return 'F';
   return null;
 }
 async function handleFile(file,hint){
@@ -354,7 +358,9 @@ async function handleFile(file,hint){
   try{
     const rows=await readSheet(file);
     if(!rows.length)throw new Error('ไฟล์ว่าง');
-    const slot=detect(rows)||hint;
+    const d=detect(rows);
+    if(d==='T')throw new Error('นี่คือ<b>ไฟล์ที่ 3</b> (ฟอร์แมตไฟล์อัปโหลดของ admin) ซึ่งเป็น<b>ผลลัพธ์</b>ที่ระบบสร้างให้ ไม่ต้องอัปเข้ามา — กรุณาใช้ไฟล์จากขนส่ง (Flash) และไฟล์จาก JST เท่านั้น');
+    const slot=d||hint;
     if(!slot)throw new Error('ตรวจไม่พบว่าเป็นไฟล์ขนส่งหรือ JST (หัวตารางไม่ตรง) — เช็คว่าเปิดชีทถูกไหม');
     store[slot]={name:file.name,rows:rows};
     $('name'+slot).textContent=file.name+' · '+(rows.length-1).toLocaleString()+' แถว';
@@ -362,7 +368,7 @@ async function handleFile(file,hint){
     note('loadMsg','ok','✅ โหลดไฟล์'+(slot==='F'?'ขนส่ง':' JST')+'แล้ว — '+(rows.length-1).toLocaleString()+' แถว');
     $('btnRun').disabled=!(store.F&&store.J);
     renderMapTable();
-  }catch(err){note('loadMsg','err','❌ '+esc(err.message));}
+  }catch(err){note('loadMsg','err','❌ '+err.message);}
 }
 
 /* ===================== HEADERS ===================== */
