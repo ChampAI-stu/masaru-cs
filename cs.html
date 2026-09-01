@@ -89,8 +89,8 @@
   .msg.err{background:#fdeceb;color:#7a1512}.msg.ok{background:#E2EFDA;color:#1c4a2a}
   .userbox{margin-left:auto;display:flex;align-items:center;gap:10px}
   .user-email{color:#e7ecf5;font-size:12px}
-  .logout-btn{background:rgba(255,255,255,.15);color:#fff;border:0;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:13px;font-family:inherit}
-  .logout-btn:hover{background:rgba(255,255,255,.26)}
+  .logout-btn,.back-btn{background:rgba(255,255,255,.15);color:#fff;border:0;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:13px;font-family:inherit;text-decoration:none;display:inline-block;white-space:nowrap}
+  .logout-btn:hover,.back-btn:hover{background:rgba(255,255,255,.26)}
 </style>
 </head>
 <body>
@@ -123,7 +123,7 @@
       <div class="htitle">ระบบตรวจสอบค่าขนส่ง</div>
       <div class="sub">เทียบเรท + จับน้ำหนักที่ขนส่งชั่งเกิน (Flash / ไปรษณีย์) · <b>เหนือกว่า ทุกวัน</b></div>
     </div>
-    <div class="userbox"><span class="user-email" id="userEmail"></span><button class="logout-btn" id="logoutBtn">ออกจากระบบ</button></div>
+    <div class="userbox"><a class="back-btn" href="index.html">← หน้าหลัก</a><span class="user-email" id="userEmail"></span><button class="logout-btn" id="logoutBtn">ออกจากระบบ</button></div>
   </div>
 </header>
 <div class="tabs">
@@ -290,6 +290,11 @@
       <div><label>น้ำหนักบรรจุภัณฑ์ที่บวกให้อัตโนมัติ (กรัม)<br><span class="muted" style="font-size:11px">กล่อง+กันกระแทก+เทป — บวกเข้ากับน้ำหนักที่เราบันทึก ก่อนคำนวณเรทของเรา</span></label><input id="cfg_packg" type="number" step="10" value="0"></div>
       <div><label>ผลต่างที่ถือว่าเป็นน้ำหนักแพ็ก (กรัม)<br><span class="muted" style="font-size:11px">ชั่งหนักกว่าเราไม่เกินเท่านี้ = นับเป็นน้ำหนักแพ็ก ไม่ใช่รายการผิดปกติ</span></label><input id="cfg_packtol" type="number" step="50" value="500"></div>
       <div><label>จังหวัด/คำ = โซน BKK (Flash)</label><input id="cfg_bkk" value="กรุงเทพ,กทม,bangkok"></div>
+    </div>
+    <div class="row" style="margin-top:16px;align-items:center;gap:10px">
+      <button class="btn" id="cfgSaveBtn">💾 บันทึกการตั้งค่า</button>
+      <button class="btn sm ghost" id="cfgReloadBtn">↻ โหลดค่าจากเซิร์ฟเวอร์</button>
+      <span id="cfgSyncMsg" class="muted" style="font-size:12px">—</span>
     </div>
   </div>
 </div>
@@ -1443,11 +1448,51 @@ document.querySelectorAll('.tab-btn').forEach(b=>b.onclick=()=>{
   if(b.dataset.tab==='history')renderHistory();});
 loadLocalCache();
 renderFlashEdit();renderPostEdit();
-let _cfgTimer=null;
-document.querySelectorAll('[id^="cfg_"]').forEach(el=>el.addEventListener('change',()=>{
-  _cfg=null;cacheLocal();
-  clearTimeout(_cfgTimer);_cfgTimer=setTimeout(saveRates,600);
-}));
+/* ===== SETTINGS: บันทึกด้วยปุ่ม ไม่บันทึกอัตโนมัติ ===== */
+let cfgDirty=false;
+function cfgStatus(msg,tone){
+  const el=document.getElementById('cfgSyncMsg');if(!el)return;
+  el.textContent=msg;
+  el.style.color=tone==='bad'?'var(--red)':tone==='good'?'#1B7F3B':tone==='warn'?'#B26A00':'var(--muted)';
+}
+function markCfgDirty(){
+  cfgDirty=true;_cfg=null;cacheLocal();
+  const b=document.getElementById('cfgSaveBtn');if(b)b.textContent='💾 บันทึกการตั้งค่า •';
+  cfgStatus('มีการแก้ไขที่ยังไม่ได้บันทึก — กด "บันทึกการตั้งค่า" เพื่อให้ทุกเครื่องใช้ค่าเดียวกัน','warn');
+}
+function markCfgClean(){
+  cfgDirty=false;
+  const b=document.getElementById('cfgSaveBtn');if(b)b.textContent='💾 บันทึกการตั้งค่า';
+}
+document.querySelectorAll('[id^="cfg_"]').forEach(el=>{
+  el.addEventListener('change',markCfgDirty);
+  el.addEventListener('input',markCfgDirty);
+});
+(function wireCfgButtons(){
+  const btn=document.getElementById('cfgSaveBtn');
+  const rl=document.getElementById('cfgReloadBtn');
+  if(btn)btn.onclick=async function(){
+    btn.disabled=true;btn.textContent='กำลังบันทึก...';
+    cfgStatus('กำลังบันทึกขึ้นเซิร์ฟเวอร์...');
+    try{
+      await saveRates();
+      const el=document.getElementById('rateSyncMsg');
+      const txt=el?el.textContent:'';
+      if(/ไม่สำเร็จ|ไม่ได้ส่งขึ้น/.test(txt)){cfgStatus(txt,'bad');}
+      else{markCfgClean();cfgStatus('✅ บันทึกแล้ว ทุกเครื่องจะเห็นค่านี้ · '+new Date().toLocaleString('th-TH'),'good');}
+    }catch(e){cfgStatus('บันทึกไม่สำเร็จ: '+(e.message||e),'bad');}
+    finally{btn.disabled=false;btn.textContent=cfgDirty?'💾 บันทึกการตั้งค่า •':'💾 บันทึกการตั้งค่า';}
+  };
+  if(rl)rl.onclick=async function(){
+    if(cfgDirty&&!confirm('มีการแก้ไขที่ยังไม่ได้บันทึก — โหลดค่าจากเซิร์ฟเวอร์จะทับค่าที่แก้ไว้ ต้องการทำต่อหรือไม่?'))return;
+    cfgStatus('กำลังโหลดจากเซิร์ฟเวอร์...');
+    await loadRates();markCfgClean();
+    cfgStatus('โหลดค่าจากเซิร์ฟเวอร์แล้ว · '+new Date().toLocaleString('th-TH'),'good');
+  };
+  window.addEventListener('beforeunload',function(e){
+    if(cfgDirty){e.preventDefault();e.returnValue='';}
+  });
+})();
 
 /* ===== LOGIN (Supabase Auth — cs-ia) ===== */
 const SIGNUP_CODE='MASARU-CS';   // รหัสเชิญสำหรับสมัคร (แก้ได้)
