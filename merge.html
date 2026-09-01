@@ -267,7 +267,7 @@ const JST_HEADERS=[["A", "หมายเลขออเดอร์ภายใ
 
 const TEMPLATE=['Order No.','Tracking No.','Return tracking No.','order date','Pickup date',
                 'Status','name','phone','address','post office','sku','weight','COD Amt'];
-const FMT_LABEL={text:'ข้อความ',date:'วันที่-เวลา',phone:'เบอร์โทร (เติม 0)',num:'ตัวเลข'};
+const FMT_LABEL={text:'ข้อความ',textc:'ข้อความ (ยุบช่องว่างซ้ำ)',date:'วันที่-เวลา',dateonly:'วันที่ (ไม่มีเวลา)',phone:'เบอร์โทร (เติม 0)',num:'ตัวเลข'};
 
 const CARRIERS={
   flash:{label:'Flash Express',icon:'📦',file:'Flash',
@@ -277,12 +277,14 @@ const CARRIERS={
 };
 
 const JST_MAP={
-  'Order No.'  :{src:'J',col:'B' ,fmt:'text'},
-  'order date' :{src:'J',col:'I' ,fmt:'date'},
-  'name'       :{src:'J',col:'AI',fmt:'text'},
-  'phone'      :{src:'J',col:'BU',fmt:'phone'},
-  'address'    :{src:'J',col:'AH',fmt:'text'},
-  'post office':{src:'J',col:'AB',fmt:'text'}
+  'Order No.'          :{src:'J',col:'B' ,fmt:'text'},
+  'Return tracking No.':{src:'J',col:'AB',fmt:'text'},
+  'order date'         :{src:'J',col:'I' ,fmt:'dateonly'},
+  'name'               :{src:'J',col:'AI',fmt:'text'},
+  'phone'              :{src:'J',col:'BU',fmt:'phone'},
+  'address'            :{src:'J',col:'AH',fmt:'textc'},
+  'post office'        :{src:'J',col:'AJ',fmt:'text'},
+  'sku'                :{src:'J',col:'C' ,fmt:'text'}
 };
 function baseMap(extra){
   const m={};
@@ -298,10 +300,13 @@ const DEFAULTS={
     'weight'      :{src:'F',col:'V' ,fmt:'num'},
     'COD Amt'     :{src:'F',col:'AN',fmt:'num'}
   })},
-  /* ไปรษณีย์ไทย: ไฟล์ที่ 1 ใช้คอลัมน์ B, C, F — ยังไม่ระบุว่าลงช่องไหน
-     ตั้งค่าได้เองในแท็บนี้ ค่าเริ่มต้นให้ B เป็นคีย์จับคู่ไว้ก่อน */
-  post :{headerF:2,headerJ:1,keyF:'B',keyJ:'F',map:baseMap({
-    'Tracking No.':{src:'F',col:'B',fmt:'text'}
+  /* ไปรษณีย์ไทย — ตรวจกับไฟล์เฉลย 1_TP_31_08_2026.xlsx แล้ว 915/915
+     หัวตารางอยู่แถวที่ 5 · แถวที่ 4 มีวันที่ฝากส่ง */
+  post :{headerF:5,headerJ:1,keyF:'B',keyJ:'F',map:baseMap({
+    'Tracking No.':{src:'F',col:'B',fmt:'text'},
+    'Pickup date' :{src:'H',col:'' ,fmt:'text'},
+    'weight'      :{src:'F',col:'C',fmt:'num'},
+    'COD Amt'     :{src:'F',col:'F',fmt:'num'}
   })}
 };
 
@@ -353,11 +358,30 @@ function fmtNum(v){
   const n=Number(String(v).replace(/\t/g,'').trim().replace(/,/g,''));
   return isNaN(n)?clean(v):n;
 }
+function squash(v){return clean(v).replace(/\s+/g,' ');}
 function applyFmt(v,fmt){
   if(fmt==='date')return fmtDate(v);
+  if(fmt==='dateonly'){const d=fmtDate(v);return d?d.slice(0,10):'';}
   if(fmt==='phone')return fmtPhone(v);
   if(fmt==='num')return fmtNum(v);
+  if(fmt==='textc')return squash(v);
   return clean(v);
+}
+/* อ่าน "วันที่: 31สิงหาคม 2569" จากแถวหัวเรื่องเหนือหัวตารางของไฟล์ ปณ. */
+const TH_MONTH={'มกราคม':1,'กุมภาพันธ์':2,'มีนาคม':3,'เมษายน':4,'พฤษภาคม':5,'มิถุนายน':6,
+                'กรกฎาคม':7,'สิงหาคม':8,'กันยายน':9,'ตุลาคม':10,'พฤศจิกายน':11,'ธันวาคม':12};
+function docDateOf(raw,headerRow){
+  const lim=Math.max(0,(parseInt(headerRow,10)||1)-1);
+  for(let i=0;i<lim;i++){
+    const line=(raw[i]||[]).map(clean).join(' ');
+    const m=line.match(/วันที่\s*[:：]?\s*(\d{1,2})\s*([\u0E00-\u0E7F]+)\s*(\d{4})/);
+    if(m){
+      const mo=TH_MONTH[m[2]];if(!mo)continue;
+      let y=parseInt(m[3],10);if(y>2400)y-=543;
+      return y+'-'+pad(mo)+'-'+pad(parseInt(m[1],10));
+    }
+  }
+  return '';
 }
 
 /* ===================== อ่านไฟล์ ===================== */
@@ -395,6 +419,7 @@ function detect(raw,headerRow){
   if(j.indexOf('post office')>=0&&j.indexOf('sku')>=0&&j.indexOf('cod amt')>=0&&j.indexOf('total charge')<0)return 'T';
   if(j.indexOf('เลขพัสดุ')>=0||j.indexOf('หมายเลขคำสั่งซื้อออนไลน์')>=0||j.indexOf('บริษัทขนส่ง')>=0)return 'J';
   if(j.indexOf('pu time')>=0||j.indexOf('total charge')>=0||j.indexOf('chargeable weight')>=0||j.indexOf('the original tracking no.')>=0)return 'FLASH';
+  if(j.indexOf('barcode')>=0&&(j.indexOf('น้ำหนัก')>=0||j.indexOf('ค่าบริการ')>=0))return 'POST';
   return null;
 }
 async function handleFile(file,slot){
@@ -408,8 +433,10 @@ async function handleFile(file,slot){
     if(d==='T')throw new Error('นี่คือ<b>ไฟล์ที่ 3</b> (ฟอร์แมตไฟล์อัปโหลดของ admin) ซึ่งเป็น<b>ผลลัพธ์</b>ที่ระบบสร้างให้ ไม่ต้องอัปเข้ามา');
     if(slot==='J'&&d!=='J')throw new Error('ช่องนี้ต้องเป็น<b>ไฟล์ JST</b> แต่ไฟล์ที่ใส่มาไม่ใช่<br><span style="font-size:12px">หัวตารางที่เจอ: '+esc((sliced(raw,hdrRow)[0]||[]).slice(0,6).map(clean).filter(Boolean).join(' · ')||'(ว่าง)')+'</span>');
     if(slot==='F'&&d==='J')throw new Error('นี่คือ<b>ไฟล์ JST</b> — ลากไปช่องขวา (ไฟล์ที่ 2) แทนครับ');
-    if(slot==='F'&&carrier==='flash'&&d!=='FLASH')throw new Error('ช่องนี้ต้องเป็น<b>ไฟล์ Flash Express</b> แต่หัวตารางไม่ตรง<br><span style="font-size:12px">หัวตารางที่เจอ: '+esc((sliced(raw,hdrRow)[0]||[]).slice(0,6).map(clean).filter(Boolean).join(' · ')||'(ว่าง)')+'</span><br><span style="font-size:12px">ถ้าไฟล์มีแถวหัวเรื่องคั่นด้านบน ตั้ง "หัวตารางอยู่แถวที่" ในแท็บ Mapping</span>');
+    if(slot==='F'&&carrier==='flash'&&d!=='FLASH'&&d!=='POST')throw new Error('ช่องนี้ต้องเป็น<b>ไฟล์ Flash Express</b> แต่หัวตารางไม่ตรง<br><span style="font-size:12px">หัวตารางที่เจอ: '+esc((sliced(raw,hdrRow)[0]||[]).slice(0,6).map(clean).filter(Boolean).join(' · ')||'(ว่าง)')+'</span><br><span style="font-size:12px">ถ้าไฟล์มีแถวหัวเรื่องคั่นด้านบน ตั้ง "หัวตารางอยู่แถวที่" ในแท็บ Mapping</span>');
     if(slot==='F'&&carrier==='post'&&d==='FLASH')throw new Error('นี่คือ<b>ไฟล์ Flash Express</b> — สลับไปแท็บ 📦 Flash Express ก่อนครับ');
+    if(slot==='F'&&carrier==='post'&&d!=='POST')throw new Error('ช่องนี้ต้องเป็น<b>ไฟล์ไปรษณีย์ไทย</b> (ใบรับฝากรวม ที่มีคอลัมน์ Barcode) แต่หัวตารางไม่ตรง<br><span style="font-size:12px">หัวตารางที่เจอ: '+esc((sliced(raw,hdrRow)[0]||[]).slice(0,6).map(clean).filter(Boolean).join(' · ')||'(ว่าง)')+'</span><br><span style="font-size:12px">ไฟล์ ปณ. หัวตารางอยู่แถวที่ 5 — ตรวจค่านี้ในแท็บ Mapping</span>');
+    if(slot==='F'&&carrier==='flash'&&d==='POST')throw new Error('นี่คือ<b>ไฟล์ไปรษณีย์ไทย</b> — สลับไปแท็บ 📮 ไปรษณีย์ไทย ก่อนครับ');
 
     store[carrier][slot]={name:file.name,raw:raw,rows:sliced(raw,hdrRow)};
     $('name'+slot).textContent=file.name+' · '+Math.max(0,store[carrier][slot].rows.length-1).toLocaleString()+' แถวข้อมูล';
@@ -456,6 +483,7 @@ function run(){
   const jIdx=new Map();
   for(let i=1;i<jRows.length;i++){const k=clean(jRows[i][kJ]);if(k&&!jIdx.has(k))jIdx.set(k,jRows[i]);}
 
+  const docDate=docDateOf(S().F.raw,c.headerF);
   const out=[],used=new Set();let matched=0;
   for(let i=1;i<fRows.length;i++){
     const fr=fRows[i], key=clean(fr[kF]);
@@ -465,6 +493,7 @@ function run(){
     const rec={};
     TEMPLATE.forEach(function(col){
       const m=c.map[col]||{src:'',col:'',fmt:'text'};
+      if(m.src==='H'){rec[col]=docDate;return;}
       if(!m.src||!m.col){rec[col]='';return;}
       const row=m.src==='F'?fr:jr;
       rec[col]=row?applyFmt(row[colIdx(m.col)],m.fmt||'text'):'';
@@ -522,10 +551,11 @@ function renderMapTable(){
          '<option value=""'+(m.src===''?' selected':'')+'>— เว้นว่าง —</option>'+
          '<option value="F"'+(m.src==='F'?' selected':'')+'>ไฟล์ขนส่ง</option>'+
          '<option value="J"'+(m.src==='J'?' selected':'')+'>ไฟล์ JST</option>'+
+         '<option value="H"'+(m.src==='H'?' selected':'')+'>วันที่จากหัวไฟล์ขนส่ง</option>'+
        '</select></td>'+
-       '<td><select data-i="'+i+'" data-k="col"'+(m.src?'':' disabled')+'>'+
-         (m.src?optionsHtml(m.src,m.col):'<option>—</option>')+'</select></td>'+
-       '<td><select data-i="'+i+'" data-k="fmt"'+(m.src?'':' disabled')+'>'+
+       '<td><select data-i="'+i+'" data-k="col"'+((m.src&&m.src!=='H')?'':' disabled')+'>'+
+         ((m.src&&m.src!=='H')?optionsHtml(m.src,m.col):'<option>'+(m.src==='H'?'อ่านจากหัวไฟล์อัตโนมัติ':'—')+'</option>')+'</select></td>'+
+       '<td><select data-i="'+i+'" data-k="fmt"'+((m.src&&m.src!=='H')?'':' disabled')+'>'+
          Object.keys(FMT_LABEL).map(f=>'<option value="'+f+'"'+((m.fmt||'text')===f?' selected':'')+'>'+FMT_LABEL[f]+'</option>').join('')+
        '</select></td></tr>';
   });
@@ -535,7 +565,7 @@ function renderMapTable(){
       const col=TEMPLATE[+sel.dataset.i], k=sel.dataset.k, cc=C();
       if(!cc.map[col])cc.map[col]={src:'',col:'',fmt:'text'};
       cc.map[col][k]=sel.value;
-      if(k==='src'){cc.map[col].col=sel.value?(headersOf(sel.value)[0]||['A'])[0]:'';renderMapTable();}
+      if(k==='src'){cc.map[col].col=(sel.value&&sel.value!=='H')?(headersOf(sel.value)[0]||['A'])[0]:'';renderMapTable();}
       cacheLocal();
     };
   });
@@ -640,10 +670,7 @@ function applyCarrier(){
     $('drop'+sl).classList.toggle('done',!!s);
   });
   $('loadMsg').innerHTML='';
-  const c=C(), unset=TEMPLATE.filter(x=>!(c.map[x]||{}).src).length;
-  $('carrierNote').innerHTML = (carrier==='post'&&unset>=10)
-    ? '<div class="msg warn">📮 <b>ไปรษณีย์ไทย — ยังตั้งค่าไม่ครบ</b><br>ไฟล์ที่ 1 ใช้คอลัมน์ <b>B, C, F</b> แต่ยังไม่ได้ระบุว่าแต่ละคอลัมน์ลงช่องไหนของไฟล์ผลลัพธ์<br><span style="font-size:12px">อัปไฟล์ก่อน แล้วไปแท็บ <b>⚙️ ตั้งค่า Mapping</b> จะเห็นชื่อคอลัมน์จริงให้เลือก · ตั้งเสร็จกดบันทึก ครั้งเดียวจบ ใช้ได้ตลอด</span></div>'
-    : '';
+  $('carrierNote').innerHTML='';
   refreshRunBtn();renderMapTable();render();
 }
 
