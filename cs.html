@@ -932,7 +932,7 @@ async function openHist(id){
     document.getElementById('resultCard').classList.remove('hide');
     document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));
     const bt=document.querySelector('.tab-btn[data-tab="batch"]');if(bt)bt.classList.add('active');
-    ['batch','dash','single','rate','settings','help','history'].forEach(t=>document.getElementById('tab-'+t).classList.add('hide'));
+    ['batch','dash','claim','single','rate','settings','help','history'].forEach(t=>document.getElementById('tab-'+t).classList.add('hide'));
     document.getElementById('tab-batch').classList.remove('hide');hideLoading();
     document.getElementById('resultCard').scrollIntoView({behavior:'smooth'});
   }catch(e){hideLoading();alert('เปิดไม่สำเร็จ: '+(e.message||e));}
@@ -1438,7 +1438,7 @@ function closeEdit(keep){
 /* ===== TABS ===== */
 document.querySelectorAll('.tab-btn').forEach(b=>b.onclick=()=>{
   document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');
-  ['batch','dash','single','rate','settings','help','history'].forEach(t=>document.getElementById('tab-'+t).classList.add('hide'));
+  ['batch','dash','claim','single','rate','settings','help','history'].forEach(t=>document.getElementById('tab-'+t).classList.add('hide'));
   document.getElementById('tab-'+b.dataset.tab).classList.remove('hide');
   if(b.dataset.tab==='history')renderHistory();});
 loadLocalCache();
