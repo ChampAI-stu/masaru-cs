@@ -71,7 +71,7 @@
   .maptbl{white-space:normal}
   .maptbl th{position:static;background:#eef1f6;color:var(--hd1)}
   .maptbl td{border-bottom:1px solid #eef1f6;padding:6px 9px;vertical-align:middle}
-  select,input[type=number]{padding:6px 8px;border:1px solid #d5dbe6;border-radius:7px;font-family:inherit;font-size:12px;background:#fff;max-width:290px}
+  select,input[type=number],input[type=date]{padding:6px 8px;border:1px solid #d5dbe6;border-radius:7px;font-family:inherit;font-size:12px;background:#fff;max-width:290px}
   .tag{font-family:monospace;font-size:11px;padding:1px 6px;border-radius:4px;background:#e8edf6;color:var(--hd1)}
   .msg{padding:10px 13px;border-radius:9px;font-size:13px;margin-bottom:12px}
   .msg.err{background:#fdeceb;color:#7a1512;border:1px solid #f5c2c6}
@@ -231,6 +231,16 @@
       <div class="sub2">คิดจากรอบที่ประมวลผลไว้ในหน้านี้ — ขนส่งไหนยังไม่ได้กด "ประมวลผล" จะยังไม่มีตัวเลข</div>
       <div id="sumBox"></div>
     </div>
+    <div class="card">
+      <h2>🗓️ ยอดสะสมตามช่วงวันที่</h2>
+      <div class="sub2">รวมจากทุกรอบที่กด "บันทึกลงประวัติ" ไว้ — เก็บบนฐานข้อมูล เปิดเครื่องไหนก็เห็นเหมือนกัน</div>
+      <div class="row" style="margin-bottom:12px">
+        <div><div style="font-size:12px;color:var(--muted);margin-bottom:4px">ตั้งแต่</div><input type="date" id="pFrom"></div>
+        <div><div style="font-size:12px;color:var(--muted);margin-bottom:4px">ถึง</div><input type="date" id="pTo"></div>
+        <button class="btn sm" id="btnPeriod" style="align-self:flex-end">ดูยอด</button>
+      </div>
+      <div id="periodBox"></div>
+    </div>
   </div>
 
   <!-- ========== ประวัติ ========== -->
@@ -283,6 +293,7 @@ const SB_KEY='sb_publishable_EIF2jqdjwOkUfT4oh86r0A_S3sP4JyN';
 const SIGNUP_CODE='MASARU-CS';
 const CFG_ROW_ID=1;
 const LS_KEY='masaru_merge_cfg_v2';
+const LS_SNAP='masaru_merge_snap_v1';
 
 const FLASH_HEADERS=[["A", "PU time"], ["B", "Operated by"], ["C", "Sub-account Name"], ["D", "Source"], ["E", "Parcel Type"], ["F", "Order No."], ["G", "Tracking No."], ["H", "The original tracking No."], ["I", "Return tracking No."], ["J", "Status"], ["K", "Sender"], ["L", "Sender phone"], ["M", "Sender address"], ["N", "Consignee"], ["O", "Consignee phone"], ["P", "Consignee phone2"], ["Q", "Consignee address"], ["R", "Item type"], ["S", "Remark1"], ["T", "Remark2"], ["U", "Remark3"], ["V", "weight"], ["W", "size"], ["X", "Chargeable Weight"], ["Y", "Product Type"], ["Z", "Estimated Delivery Time"], ["AA", "Freight"], ["AB", "Packaging Fee"], ["AC", "COD fee"], ["AD", "label cost"], ["AE", "ประกันพัสดุตีกลับ"], ["AF", "Flash Care（including vat）"], ["AG", "Flash Care plus fee (รวมภาษี)"], ["AH", "Box Shield（รวมภาษี）"], ["AI", "Declared value"], ["AJ", "Discount"], ["AK", "Total charge"], ["AL", "On-Time Delivery Fee"], ["AM", "Fuel Surcharge"], ["AN", "COD Amt"], ["AO", "Delivery time"], ["AP", "Signer"], ["AQ", "Signer type"]];
 const JST_HEADERS=[["A", "หมายเลขออเดอร์ภายใน"], ["B", "หมายเลขคำสั่งซื้อออนไลน์"], ["C", "สินค้า"], ["D", "สถานะคำสั่งซื้อ"], ["E", "บริษัทขนส่ง"], ["F", "เลขพัสดุ"], ["G", "สถานะขนส่ง"], ["H", "สถานะการจัดส่งแพลตฟอร์ม"], ["I", "เวลาสั่งซื้อ"], ["J", "เวลาชำระเงิน"], ["K", "เวลาที่จําหน่ายล่วงหน้า"], ["L", "ร้านค้า​"], ["M", "บัญชีผู้ซื้อ"], ["N", "ชื่อผู้ซื้อ"], ["O", "ป้ายแท็ก"], ["P", "ราคาสินค้าทั้งหมด"], ["Q", "จำนวนเงินที่ควรได้รับ"], ["R", "ยอดที่ชำระแล้ว"], ["S", "ยอด COD"], ["T", "ยอดที่ชำระแล้ว(ไม่รวมCOD)"], ["U", "ยอดค้างชำระ"], ["V", "จำนวนส่วนลดแพลตฟอร์ม"], ["W", "ส่วนลดจากร้านค้า (คำสั่งซื้อ)"], ["X", "ค่าธรรมเนียมอื่นๆ"], ["Y", "ค่าจัดส่ง"], ["Z", "วันครบกำหนด"], ["AA", "ประเภทของรายการสั่งซื้อ"], ["AB", "ข้อความของผู้ซื้อ"], ["AC", "หมายเหตุจากผู้ขาย"], ["AD", "หมายเหตุ"], ["AE", "จังหวัด"], ["AF", "เมือง"], ["AG", "แขวง/ตำบล"], ["AH", "ที่อยู่ผู้รับ"], ["AI", "ผู้รับ"], ["AJ", "รหัสไปรษณีย์"], ["AK", "น้ำหนัก"], ["AL", "คลังสินค้าส่งออก"], ["AM", "พนักงานขาย"], ["AN", "วันที่จัดส่ง"], ["AO", "กำหนดส่งสินค้า"], ["AP", "เวลาที่เหลือในการจัดส่ง"], ["AQ", "เวลาการชําระเงินที่เหลืออยู่"], ["AR", "ผู้จัดจําหน่าย"], ["AS", "ตัวแทนจำหน่าย"], ["AT", "ส่งออกให้คลังอื่นหรือไม่"], ["AU", "วิธีการส่ง"], ["AV", "วิธีรับเงิน"], ["AW", "แพลตฟอร์ม"], ["AX", "เลขออเดอร์ก่อนที่จะแยกบิล"], ["AY", "ผู้ให้บริการขนส่ง"], ["AZ", "วิธีการจัดส่ง"], ["BA", "หมายเลขหลังการขาย"], ["BB", "เวลาที่ระบบสร้างขึ้น"], ["BC", "เวลาที่แก้ไขในระบบ"], ["BD", "วิธีการชำระเงิน"], ["BE", "ธนาคาร"], ["BF", "บัญชีธนาคาร"], ["BG", "ภาษี"], ["BH", "ประเภทใบเสร็จ"], ["BI", "ชื่อใบกำกับภาษี"], ["BJ", "เลขผู้เสียภาษีอากร"], ["BK", "อีเมล"], ["BL", "เบอร์โทรใบแจ้งหนี้"], ["BM", "ที่อยู่ใบแจ้งหนี้"], ["BN", "เลขใบแจ้งหนี้"], ["BO", "จํานวนสินค้าตีกลับ"], ["BP", "จํานวนเงินที่คืน"], ["BQ", "สินค้าตีกลับจริง"], ["BR", "ยอดเงินที่คืนจริง"], ["BS", "อัตราภาษี"], ["BT", "เบอร์โทร"], ["BU", "เบอร์โทร"]];
@@ -339,6 +350,9 @@ let cfg=JSON.parse(JSON.stringify(DEFAULTS));
 const store={flash:{F:null,J:null},post:{F:null,J:null}};
 const results={flash:null,post:null};
 let missOnly=false, pendingSlot=null;
+let snap={flash:null,post:null};
+function saveSnap(){try{localStorage.setItem(LS_SNAP,JSON.stringify(snap));}catch(e){}}
+function loadSnap(){try{const t=localStorage.getItem(LS_SNAP);if(t){const o=JSON.parse(t);if(o)snap=Object.assign({flash:null,post:null},o);}}catch(e){}}
 
 function sbClient(){if(!sb){try{sb=window.supabase.createClient(SB_URL,SB_KEY);}catch(e){sb=null;}}return sb;}
 const $=id=>document.getElementById(id);
@@ -532,6 +546,9 @@ function run(){
   for(let i=1;i<jRows.length;i++){const t=clean(jRows[i][kJ]);if(t&&!used.has(t))jstOnly++;}
   results[carrier]={rows:out,matched:matched,jstOnly:jstOnly,fileF:S().F.name,fileJ:S().J.name,
                     cod:sumCod,fee:sumFee,at:new Date()};
+  snap[carrier]={n:out.length,matched:matched,cod:sumCod,fee:sumFee,
+                 fileF:S().F.name,fileJ:S().J.name,at:new Date().toISOString()};
+  saveSnap();
   missOnly=false;$('btnMiss').textContent='แสดงเฉพาะแถวที่จับคู่ไม่ได้';$('saveMsg').innerHTML='';
   render();
 }
@@ -770,14 +787,17 @@ window.delHistory=delHistory;
 
 /* ===================== สรุปรวม ===================== */
 function money(n){return '฿'+Number(n||0).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2});}
-function renderSummary(){
-  const ks=Object.keys(CARRIERS), done=ks.filter(k=>results[k]);
-  if(!done.length){
-    $('sumBox').innerHTML='<div class="msg info">ยังไม่มีข้อมูล — ไปแท็บขนส่ง อัปไฟล์แล้วกด <b>ประมวลผล</b> อย่างน้อย 1 ขนส่ง แล้วกลับมาดูหน้านี้</div>';
-    return;
-  }
+function statOf(k){
+  const r=results[k];
+  if(r)return {n:r.rows.length,matched:r.matched,cod:r.cod,fee:r.fee,fileF:r.fileF,fileJ:r.fileJ,at:r.at,live:true};
+  const p=snap[k];
+  if(p)return {n:p.n,matched:p.matched,cod:p.cod,fee:p.fee,fileF:p.fileF,fileJ:p.fileJ,at:p.at?new Date(p.at):null,live:false};
+  return null;
+}
+function sumTable(get,label){
+  const ks=Object.keys(CARRIERS);
   const tot={n:0,cod:0,fee:0};
-  done.forEach(function(k){const r=results[k];tot.n+=r.rows.length;tot.cod+=r.cod;tot.fee+=r.fee;});
+  ks.forEach(function(k){const v=get(k);if(v){tot.n+=v.n;tot.cod+=v.cod;tot.fee+=v.fee;}});
   let h='<div class="stats">'+
     '<div class="stat"><div class="l">ยอดส่งรวมทุกขนส่ง</div><div class="v">'+tot.n.toLocaleString()+' <span style="font-size:13px">ชิ้น</span></div></div>'+
     '<div class="stat ok"><div class="l">ยอด COD รวม</div><div class="v" style="font-size:19px">'+money(tot.cod)+'</div></div>'+
@@ -787,29 +807,82 @@ function renderSummary(){
   h+='<div class="tbl-scroll" style="max-height:none;margin-top:6px"><table><tr>'+
      '<th>ขนส่ง</th><th style="text-align:right">ยอดส่ง (ชิ้น)</th><th style="text-align:right">สัดส่วน</th>'+
      '<th style="text-align:right">ยอด COD</th><th style="text-align:right">ค่าขนส่ง</th>'+
-     '<th style="text-align:right">ค่าขนส่งเฉลี่ย/ชิ้น</th><th>ไฟล์ที่ใช้</th></tr>';
+     '<th style="text-align:right">ค่าขนส่งเฉลี่ย/ชิ้น</th><th>'+label+'</th></tr>';
   ks.forEach(function(k){
-    const r=results[k], meta=CARRIERS[k];
-    if(!r){
-      h+='<tr><td>'+meta.icon+' '+esc(meta.label)+'</td><td colspan="6" style="color:#93a0b4">— ยังไม่ได้ประมวลผล —</td></tr>';
-      return;
-    }
-    const pct=tot.n?(r.rows.length/tot.n*100):0;
+    const v=get(k), meta=CARRIERS[k];
+    if(!v){h+='<tr><td>'+meta.icon+' '+esc(meta.label)+'</td><td colspan="6" style="color:#93a0b4">— ไม่มีข้อมูล —</td></tr>';return;}
+    const pct=tot.n?(v.n/tot.n*100):0;
     h+='<tr><td><b>'+meta.icon+' '+esc(meta.label)+'</b></td>'+
-       '<td style="text-align:right">'+r.rows.length.toLocaleString()+'</td>'+
+       '<td style="text-align:right">'+v.n.toLocaleString()+'</td>'+
        '<td style="text-align:right">'+pct.toFixed(1)+'%</td>'+
-       '<td style="text-align:right">'+money(r.cod)+'</td>'+
-       '<td style="text-align:right">'+money(r.fee)+'</td>'+
-       '<td style="text-align:right">'+money(r.rows.length?r.fee/r.rows.length:0)+'</td>'+
-       '<td style="font-size:11px;color:var(--muted)">'+esc(r.fileF)+'</td></tr>';
+       '<td style="text-align:right">'+money(v.cod)+'</td>'+
+       '<td style="text-align:right">'+money(v.fee)+'</td>'+
+       '<td style="text-align:right">'+money(v.n?v.fee/v.n:0)+'</td>'+
+       '<td style="font-size:11px;color:var(--muted)">'+esc(v.note||v.fileF||'')+'</td></tr>';
   });
   h+='<tr style="font-weight:800;background:#eef1f6"><td>รวมทั้งหมด</td>'+
      '<td style="text-align:right">'+tot.n.toLocaleString()+'</td><td style="text-align:right">100%</td>'+
      '<td style="text-align:right">'+money(tot.cod)+'</td><td style="text-align:right">'+money(tot.fee)+'</td>'+
      '<td style="text-align:right">'+money(tot.n?tot.fee/tot.n:0)+'</td><td></td></tr></table></div>';
-  h+='<div class="row" style="margin-top:14px"><button class="btn gold" id="btnDlSum">⬇ ดาวน์โหลดสรุป (Excel)</button></div>';
+  return h;
+}
+function renderSummary(){
+  const has=Object.keys(CARRIERS).some(k=>statOf(k));
+  let h='';
+  if(!has){
+    h='<div class="msg info">ยังไม่มีรอบที่ประมวลผล — ไปแท็บขนส่ง อัปไฟล์แล้วกด <b>ประมวลผล</b> อย่างน้อย 1 ขนส่ง</div>';
+  }else{
+    const live=Object.keys(CARRIERS).some(k=>results[k]);
+    h='<div class="msg '+(live?'ok':'info')+'" style="font-size:12px">'+
+      (live?'ตัวเลขจากรอบที่ประมวลผลในหน้านี้':'⏱ ตัวเลขจากรอบล่าสุดที่บันทึกไว้ในเครื่อง (ไฟล์หายหลังรีเฟรช แต่ยอดยังอยู่) — อยากได้ตารางข้อมูลด้วยให้ประมวลผลใหม่')+
+      '</div>'+sumTable(statOf,'ไฟล์ขนส่ง');
+    h+='<div class="row" style="margin-top:12px"><button class="btn gold" id="btnDlSum">⬇ ดาวน์โหลดสรุป (Excel)</button></div>';
+  }
   $('sumBox').innerHTML=h;
-  $('btnDlSum').onclick=downloadSummary;
+  if(has)$('btnDlSum').onclick=downloadSummary;
+  renderPeriod();
+}
+/* ---- สรุปจากประวัติที่บันทึกบนฐานข้อมูล (ไม่หายแม้เปลี่ยนเครื่อง) ---- */
+let periodData=null;
+function renderPeriod(){
+  const d=new Date(), first=new Date(d.getFullYear(),d.getMonth(),1);
+  const f=v=>v.getFullYear()+'-'+pad(v.getMonth()+1)+'-'+pad(v.getDate());
+  if(!$('pFrom').value)$('pFrom').value=f(first);
+  if(!$('pTo').value)$('pTo').value=f(d);
+  if(!periodData){$('periodBox').innerHTML='<div class="msg info" style="font-size:12px">เลือกช่วงวันที่แล้วกด <b>ดูยอด</b> — รวมจากทุกรอบที่กด "บันทึกลงประวัติ" ไว้</div>';return;}
+  $('periodBox').innerHTML=sumTable(function(k){return periodData[k]||null;},'จำนวนรอบ');
+}
+async function loadPeriod(){
+  const c=sbClient();
+  if(!c){$('periodBox').innerHTML='<div class="msg err">เชื่อมฐานข้อมูลไม่ได้</div>';return;}
+  const from=$('pFrom').value, to=$('pTo').value;
+  $('periodBox').innerHTML='<div class="msg info">⏳ กำลังรวมยอด...</div>';
+  try{
+    let q=c.from('merge_history').select('created_at,carrier,summary');
+    if(from)q=q.gte('created_at',from+'T00:00:00');
+    if(to)q=q.lte('created_at',to+'T23:59:59');
+    const {data,error}=await q;
+    if(error)throw error;
+    const byKey={};
+    (data||[]).forEach(function(r){
+      const sm=r.summary||{};
+      let k=sm.carrierKey;
+      if(!k)k=(r.carrier||'').indexOf('ไปรษณีย์')>=0?'post':'flash';
+      if(!CARRIERS[k])return;
+      if(!byKey[k])byKey[k]={n:0,cod:0,fee:0,rounds:0};
+      byKey[k].n+=Number(sm.total||0);
+      byKey[k].cod+=Number(sm.cod||0);
+      byKey[k].fee+=Number(sm.fee||0);
+      byKey[k].rounds++;
+    });
+    Object.keys(byKey).forEach(function(k){byKey[k].note=byKey[k].rounds+' รอบ';});
+    periodData=byKey;
+    if(!Object.keys(byKey).length){
+      $('periodBox').innerHTML='<div class="msg warn" style="font-size:12px">ไม่มีรอบที่บันทึกไว้ในช่วงนี้ · รอบที่บันทึกก่อนมีระบบคิดค่าขนส่งจะไม่มียอด COD/ค่าขนส่ง</div>';
+      return;
+    }
+    renderPeriod();
+  }catch(e){$('periodBox').innerHTML='<div class="msg err">รวมยอดไม่สำเร็จ: '+esc(e.message||e)+'</div>';}
 }
 function downloadSummary(){
   const ks=Object.keys(CARRIERS).filter(k=>results[k]);
@@ -876,7 +949,7 @@ $('btnMiss').onclick=function(){
   render();
 };
 $('btnClear').onclick=function(){
-  store[carrier]={F:null,J:null};results[carrier]=null;
+  store[carrier]={F:null,J:null};results[carrier]=null;snap[carrier]=null;saveSnap();
   applyCarrier();
 };
 $('btnSaveMap').onclick=saveCfg;
@@ -887,6 +960,7 @@ $('btnResetMap').onclick=function(){
   note('mapMsg','info','คืนค่าเริ่มต้นแล้ว — กด "บันทึกการตั้งค่า" เพื่อให้ทีมใช้ค่านี้');
 };
 $('btnReload').onclick=renderHistory;
+$('btnPeriod').onclick=loadPeriod;
 $('hvClose').onclick=function(){$('histViewCard').classList.add('hide');hvState=null;};
 $('hvDl').onclick=function(){
   if(!hvState)return;
@@ -947,6 +1021,7 @@ function hideAuth(session){
 })();
 
 loadLocal();
+loadSnap();
 applyCarrier();
 </script>
 </body>
