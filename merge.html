@@ -146,6 +146,7 @@
   <div class="tabs">
     <button class="tab-btn active" data-tab="merge">🔗 รวมไฟล์</button>
     <button class="tab-btn" data-tab="map">⚙️ ตั้งค่า Mapping</button>
+    <button class="tab-btn" data-tab="summary">📊 สรุปรวม</button>
     <button class="tab-btn" data-tab="history">🕘 ประวัติ</button>
     <button class="tab-btn" data-tab="help">❓ วิธีใช้</button>
   </div>
@@ -203,6 +204,7 @@
           <input type="number" id="hdrJ" min="1" max="20" step="1" style="width:110px"></div>
         <div><div style="font-size:12px;color:var(--muted);margin-bottom:4px">คีย์จับคู่ — ไฟล์ขนส่ง</div><select id="keyF"></select></div>
         <div><div style="font-size:12px;color:var(--muted);margin-bottom:4px">คีย์จับคู่ — ไฟล์ JST</div><select id="keyJ"></select></div>
+        <div><div style="font-size:12px;color:var(--muted);margin-bottom:4px">คอลัมน์ค่าขนส่ง (ใช้ในหน้าสรุป)</div><select id="feeCol"></select></div>
       </div>
       <div class="msg info" style="margin-top:12px;margin-bottom:0;font-size:12px">
         ถ้าไฟล์มีแถวหัวเรื่องคั่นด้านบน ให้ตั้ง "หัวตารางอยู่แถวที่" เป็น 2 (หรือมากกว่า) ระบบจะข้ามแถวบนให้เอง<br>
@@ -219,6 +221,15 @@
         <span class="badge" id="mapInfo"></span>
       </div>
       <div id="mapMsg" style="margin-top:10px"></div>
+    </div>
+  </div>
+
+  <!-- ========== สรุปรวม ========== -->
+  <div id="tab-summary" class="hide">
+    <div class="card">
+      <h2>📊 สรุปรวมทุกขนส่ง</h2>
+      <div class="sub2">คิดจากรอบที่ประมวลผลไว้ในหน้านี้ — ขนส่งไหนยังไม่ได้กด "ประมวลผล" จะยังไม่มีตัวเลข</div>
+      <div id="sumBox"></div>
     </div>
   </div>
 
@@ -294,15 +305,16 @@ function baseMap(extra){
   return m;
 }
 const DEFAULTS={
-  flash:{headerF:1,headerJ:1,keyF:'G',keyJ:'F',map:baseMap({
+  flash:{headerF:1,headerJ:1,keyF:'G',keyJ:'F',feeCol:'AK',map:baseMap({
     'Tracking No.':{src:'F',col:'G' ,fmt:'text'},
+    'Pickup date' :{src:'F',col:'A' ,fmt:'dateonly'},
     'Status'      :{src:'F',col:'J' ,fmt:'text'},
     'weight'      :{src:'F',col:'V' ,fmt:'num'},
     'COD Amt'     :{src:'F',col:'AN',fmt:'num'}
   })},
   /* ไปรษณีย์ไทย — ตรวจกับไฟล์เฉลย 1_TP_31_08_2026.xlsx แล้ว 915/915
      หัวตารางอยู่แถวที่ 5 · แถวที่ 4 มีวันที่ฝากส่ง */
-  post :{headerF:5,headerJ:1,keyF:'B',keyJ:'F',map:baseMap({
+  post :{headerF:5,headerJ:1,keyF:'B',keyJ:'F',feeCol:'J',map:baseMap({
     'Tracking No.':{src:'F',col:'B',fmt:'text'},
     'Pickup date' :{src:'H',col:'' ,fmt:'text'},
     'weight'      :{src:'F',col:'C',fmt:'num'},
@@ -484,6 +496,8 @@ function run(){
   for(let i=1;i<jRows.length;i++){const k=clean(jRows[i][kJ]);if(k&&!jIdx.has(k))jIdx.set(k,jRows[i]);}
 
   const docDate=docDateOf(S().F.raw,c.headerF);
+  const feeIdx=c.feeCol?colIdx(c.feeCol):-1;
+  let sumCod=0,sumFee=0;
   const out=[],used=new Set();let matched=0;
   for(let i=1;i<fRows.length;i++){
     const fr=fRows[i], key=clean(fr[kF]);
@@ -499,11 +513,14 @@ function run(){
       rec[col]=row?applyFmt(row[colIdx(m.col)],m.fmt||'text'):'';
     });
     rec._miss=!jr;
+    const cv=Number(rec['COD Amt']);if(isFinite(cv))sumCod+=cv;
+    if(feeIdx>=0){const fv=fmtNum(fr[feeIdx]);if(typeof fv==='number'&&isFinite(fv))sumFee+=fv;}
     out.push(rec);
   }
   let jstOnly=0;
   for(let i=1;i<jRows.length;i++){const t=clean(jRows[i][kJ]);if(t&&!used.has(t))jstOnly++;}
-  results[carrier]={rows:out,matched:matched,jstOnly:jstOnly,fileF:S().F.name,fileJ:S().J.name};
+  results[carrier]={rows:out,matched:matched,jstOnly:jstOnly,fileF:S().F.name,fileJ:S().J.name,
+                    cod:sumCod,fee:sumFee,at:new Date()};
   missOnly=false;$('btnMiss').textContent='แสดงเฉพาะแถวที่จับคู่ไม่ได้';$('saveMsg').innerHTML='';
   render();
 }
@@ -583,6 +600,9 @@ function renderMapTable(){
       cacheLocal();
     };
   });
+  $('feeCol').innerHTML='<option value="">— ไม่คิดค่าขนส่ง —</option>'+optionsHtml('F',c.feeCol||'');
+  $('feeCol').value=c.feeCol||'';
+  $('feeCol').onchange=function(){C().feeCol=this.value;cacheLocal();};
   $('keyF').onchange=function(){C().keyF=this.value;cacheLocal();};
   $('keyJ').onchange=function(){C().keyJ=this.value;cacheLocal();};
   $('hdrF').onchange=function(){C().headerF=Math.max(1,parseInt(this.value,10)||1);reslice();cacheLocal();renderMapTable();};
@@ -669,6 +689,71 @@ async function delHistory(id){
 }
 window.delHistory=delHistory;
 
+/* ===================== สรุปรวม ===================== */
+function money(n){return '฿'+Number(n||0).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function renderSummary(){
+  const ks=Object.keys(CARRIERS), done=ks.filter(k=>results[k]);
+  if(!done.length){
+    $('sumBox').innerHTML='<div class="msg info">ยังไม่มีข้อมูล — ไปแท็บขนส่ง อัปไฟล์แล้วกด <b>ประมวลผล</b> อย่างน้อย 1 ขนส่ง แล้วกลับมาดูหน้านี้</div>';
+    return;
+  }
+  const tot={n:0,cod:0,fee:0};
+  done.forEach(function(k){const r=results[k];tot.n+=r.rows.length;tot.cod+=r.cod;tot.fee+=r.fee;});
+  let h='<div class="stats">'+
+    '<div class="stat"><div class="l">ยอดส่งรวมทุกขนส่ง</div><div class="v">'+tot.n.toLocaleString()+' <span style="font-size:13px">ชิ้น</span></div></div>'+
+    '<div class="stat ok"><div class="l">ยอด COD รวม</div><div class="v" style="font-size:19px">'+money(tot.cod)+'</div></div>'+
+    '<div class="stat warn"><div class="l">ค่าขนส่งรวม</div><div class="v" style="font-size:19px">'+money(tot.fee)+'</div></div>'+
+    '<div class="stat"><div class="l">ค่าขนส่งเฉลี่ย/ชิ้น</div><div class="v" style="font-size:19px">'+money(tot.n?tot.fee/tot.n:0)+'</div></div>'+
+  '</div>';
+  h+='<div class="tbl-scroll" style="max-height:none;margin-top:6px"><table><tr>'+
+     '<th>ขนส่ง</th><th style="text-align:right">ยอดส่ง (ชิ้น)</th><th style="text-align:right">สัดส่วน</th>'+
+     '<th style="text-align:right">ยอด COD</th><th style="text-align:right">ค่าขนส่ง</th>'+
+     '<th style="text-align:right">ค่าขนส่งเฉลี่ย/ชิ้น</th><th>ไฟล์ที่ใช้</th></tr>';
+  ks.forEach(function(k){
+    const r=results[k], meta=CARRIERS[k];
+    if(!r){
+      h+='<tr><td>'+meta.icon+' '+esc(meta.label)+'</td><td colspan="6" style="color:#93a0b4">— ยังไม่ได้ประมวลผล —</td></tr>';
+      return;
+    }
+    const pct=tot.n?(r.rows.length/tot.n*100):0;
+    h+='<tr><td><b>'+meta.icon+' '+esc(meta.label)+'</b></td>'+
+       '<td style="text-align:right">'+r.rows.length.toLocaleString()+'</td>'+
+       '<td style="text-align:right">'+pct.toFixed(1)+'%</td>'+
+       '<td style="text-align:right">'+money(r.cod)+'</td>'+
+       '<td style="text-align:right">'+money(r.fee)+'</td>'+
+       '<td style="text-align:right">'+money(r.rows.length?r.fee/r.rows.length:0)+'</td>'+
+       '<td style="font-size:11px;color:var(--muted)">'+esc(r.fileF)+'</td></tr>';
+  });
+  h+='<tr style="font-weight:800;background:#eef1f6"><td>รวมทั้งหมด</td>'+
+     '<td style="text-align:right">'+tot.n.toLocaleString()+'</td><td style="text-align:right">100%</td>'+
+     '<td style="text-align:right">'+money(tot.cod)+'</td><td style="text-align:right">'+money(tot.fee)+'</td>'+
+     '<td style="text-align:right">'+money(tot.n?tot.fee/tot.n:0)+'</td><td></td></tr></table></div>';
+  h+='<div class="row" style="margin-top:14px"><button class="btn gold" id="btnDlSum">⬇ ดาวน์โหลดสรุป (Excel)</button></div>';
+  $('sumBox').innerHTML=h;
+  $('btnDlSum').onclick=downloadSummary;
+}
+function downloadSummary(){
+  const ks=Object.keys(CARRIERS).filter(k=>results[k]);
+  const rows=ks.map(function(k){
+    const r=results[k];
+    return {'ขนส่ง':CARRIERS[k].label,'ยอดส่ง (ชิ้น)':r.rows.length,
+            'ยอด COD':Math.round(r.cod*100)/100,'ค่าขนส่ง':Math.round(r.fee*100)/100,
+            'ค่าขนส่งเฉลี่ย/ชิ้น':r.rows.length?Math.round(r.fee/r.rows.length*100)/100:0,
+            'ไฟล์ขนส่ง':r.fileF,'ไฟล์ JST':r.fileJ};
+  });
+  const t=rows.reduce(function(a,b){a['ยอดส่ง (ชิ้น)']+=b['ยอดส่ง (ชิ้น)'];a['ยอด COD']+=b['ยอด COD'];a['ค่าขนส่ง']+=b['ค่าขนส่ง'];return a;},
+                      {'ขนส่ง':'รวมทั้งหมด','ยอดส่ง (ชิ้น)':0,'ยอด COD':0,'ค่าขนส่ง':0,'ค่าขนส่งเฉลี่ย/ชิ้น':0,'ไฟล์ขนส่ง':'','ไฟล์ JST':''});
+  t['ยอด COD']=Math.round(t['ยอด COD']*100)/100;
+  t['ค่าขนส่ง']=Math.round(t['ค่าขนส่ง']*100)/100;
+  t['ค่าขนส่งเฉลี่ย/ชิ้น']=t['ยอดส่ง (ชิ้น)']?Math.round(t['ค่าขนส่ง']/t['ยอดส่ง (ชิ้น)']*100)/100:0;
+  rows.push(t);
+  const ws=XLSX.utils.json_to_sheet(rows);
+  ws['!cols']=[{wch:18},{wch:14},{wch:16},{wch:14},{wch:20},{wch:26},{wch:26}];
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'สรุป');
+  const d=new Date();
+  XLSX.writeFile(wb,'CS_summary_'+pad(d.getDate())+'-'+pad(d.getMonth()+1)+'-'+d.getFullYear()+'.xlsx');
+}
+
 /* ===================== สลับขนส่ง ===================== */
 function applyCarrier(){
   const meta=CARRIERS[carrier];
@@ -727,9 +812,10 @@ document.querySelectorAll('.tab-btn').forEach(function(b){
   b.onclick=function(){
     document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));
     b.classList.add('active');
-    ['merge','map','history','help'].forEach(t=>$('tab-'+t).classList.add('hide'));
+    ['merge','map','summary','history','help'].forEach(t=>$('tab-'+t).classList.add('hide'));
     $('tab-'+b.dataset.tab).classList.remove('hide');
     if(b.dataset.tab==='history')renderHistory();
+    if(b.dataset.tab==='summary')renderSummary();
   };
 });
 
