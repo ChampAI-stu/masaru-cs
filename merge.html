@@ -241,6 +241,17 @@
       <div class="row" style="margin-bottom:12px"><button class="btn ghost sm" id="btnReload">↻ โหลดใหม่</button></div>
       <div id="histBox"></div>
     </div>
+    <div class="card hide" id="histViewCard">
+      <h2>📄 <span id="hvTitle"></span></h2>
+      <div class="sub2" id="hvSub"></div>
+      <div class="stats" id="hvStats"></div>
+      <div class="row" style="margin-bottom:12px">
+        <button class="btn gold" id="hvDl">⬇ ดาวน์โหลด Excel</button>
+        <button class="btn ghost sm" id="hvClose">ปิด</button>
+        <span class="badge" id="hvInfo"></span>
+      </div>
+      <div class="tbl-scroll"><table id="hvTbl"></table></div>
+    </div>
   </div>
 
   <!-- ========== วิธีใช้ ========== -->
@@ -549,12 +560,28 @@ function toDateCell(v){
   if(!m)return v;
   return new Date(+m[1],+m[2]-1,+m[3],+(m[4]||0),+(m[5]||0),+(m[6]||0));
 }
+function dateColsOf(c){
+  const dc={};
+  TEMPLATE.forEach(function(t){const f=(c.map[t]||{}).fmt;if(f==='date'||f==='dateonly')dc[t]=1;});
+  if((c.map['Pickup date']||{}).src==='H')dc['Pickup date']=1;
+  return dc;
+}
+function exportRows(rows,dateCols,fname){
+  const data=rows.map(function(x){
+    const o={};
+    TEMPLATE.forEach(function(c2){o[c2]=(dateCols[c2]&&x[c2])?toDateCell(x[c2]):x[c2];});
+    return o;
+  });
+  const ws=XLSX.utils.json_to_sheet(data,{header:TEMPLATE,cellDates:true});
+  ws['!cols']=[14,17,17,20,20,15,22,12,52,32,22,9,10].map(w=>({wch:w}));
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Sheet1');
+  XLSX.writeFile(wb,fname,{cellDates:true});
+}
 function download(){
   const r=results[carrier];if(!r)return;
   const c=C();
-  const dateCols={};
-  TEMPLATE.forEach(function(t){const f=(c.map[t]||{}).fmt;if(f==='date'||f==='dateonly')dateCols[t]=1;});
-  if((c.map['Pickup date']||{}).src==='H')dateCols['Pickup date']=1;
+  const dateCols=dateColsOf(c);
   const data=r.rows.map(function(x){
     const o={};
     TEMPLATE.forEach(function(c2){o[c2]=(dateCols[c2]&&x[c2])?toDateCell(x[c2]):x[c2];});
@@ -652,13 +679,23 @@ async function saveHistory(){
   if(n===null)return;
   try{
     const {data:s}=await c.auth.getSession();
+    const hid=Date.now();
     const {error}=await c.from('merge_history').insert({
-      id:Date.now(),carrier:CARRIERS[carrier].label,note:n||def,
+      id:hid,carrier:CARRIERS[carrier].label,note:n||def,
       summary:{total:r.rows.length,matched:r.matched,missing:r.rows.length-r.matched,
                jstOnly:r.jstOnly,fileF:r.fileF,fileJ:r.fileJ,
+               cod:r.cod,fee:r.fee,carrierKey:carrier,
                by:(s&&s.session&&s.session.user)?s.session.user.email:''}});
     if(error)throw error;
-    note('saveMsg','ok','✅ บันทึกลงประวัติแล้ว');
+    /* เก็บรายแถวไว้คนละตาราง หน้าประวัติจะได้ไม่ต้องดึงก้อนใหญ่ */
+    let rowMsg='';
+    try{
+      const dc=dateColsOf(C());
+      const packed=r.rows.map(function(x){return TEMPLATE.map(function(t){return x[t];});});
+      const {error:e2}=await c.from('merge_history_rows').insert({id:hid,cols:TEMPLATE,datecols:Object.keys(dc),rows:packed});
+      if(e2)throw e2;
+    }catch(e2){rowMsg=' (แต่เก็บข้อมูลรายแถวไม่ได้ จะเปิดดูซ้ำไม่ได้: '+esc(e2.message||e2)+')';}
+    note('saveMsg',rowMsg?'warn':'ok','✅ บันทึกลงประวัติแล้ว'+rowMsg);
   }catch(e){note('saveMsg','err','⚠️ บันทึกไม่สำเร็จ: '+esc(e.message||e)+'');}
 }
 async function renderHistory(){
@@ -669,22 +706,64 @@ async function renderHistory(){
     const {data,error}=await c.from('merge_history').select('id,created_at,carrier,note,summary').order('id',{ascending:false}).limit(200);
     if(error)throw error;
     if(!data||!data.length){$('histBox').innerHTML='<div class="msg info">ยังไม่มีประวัติ</div>';return;}
-    let h='<div class="tbl-scroll" style="max-height:560px"><table><tr><th>วันที่/เวลา</th><th>ขนส่ง</th><th>บันทึก</th><th>ไฟล์ขนส่ง</th><th>ไฟล์ JST</th><th>ทั้งหมด</th><th>จับคู่ได้</th><th>ไม่พบ</th><th>โดย</th><th></th></tr>';
+    let h='<div class="tbl-scroll" style="max-height:560px"><table><tr><th>วันที่/เวลา</th><th>ขนส่ง</th><th>บันทึก</th><th>ไฟล์ขนส่ง</th><th>ไฟล์ JST</th><th>ทั้งหมด</th><th>จับคู่ได้</th><th>ไม่พบ</th><th>โดย</th><th style="text-align:right">ยอด COD</th><th style="text-align:right">ค่าขนส่ง</th><th></th></tr>';
     data.forEach(function(r){
       const s=r.summary||{};
       h+='<tr><td>'+esc(fmtDate(r.created_at))+'</td><td>'+esc(r.carrier||'-')+'</td><td>'+esc(r.note)+'</td>'+
          '<td>'+esc(s.fileF)+'</td><td>'+esc(s.fileJ)+'</td>'+
          '<td>'+((s.total||0).toLocaleString())+'</td><td>'+((s.matched||0).toLocaleString())+'</td>'+
          '<td>'+((s.missing||0).toLocaleString())+'</td><td>'+esc(s.by)+'</td>'+
-         '<td><button class="btn ghost sm" onclick="delHistory('+r.id+')">ลบ</button></td></tr>';
+         '<td style="text-align:right">'+money(s.cod||0)+'</td><td style="text-align:right">'+money(s.fee||0)+'</td>'+
+         '<td><button class="btn sm" onclick="openHistory('+r.id+')">เปิดดู</button> '+
+         '<button class="btn ghost sm" onclick="delHistory('+r.id+')">ลบ</button></td></tr>';
     });
     $('histBox').innerHTML=h+'</table></div>';
   }catch(e){$('histBox').innerHTML='<div class="msg err">โหลดไม่สำเร็จ: '+esc(e.message||e)+' — แจ้งผู้ดูแลระบบให้ตรวจฐานข้อมูล</div>';}
 }
+let hvState=null;
+async function openHistory(id){
+  const c=sbClient();if(!c)return;
+  const card=$('histViewCard');card.classList.remove('hide');
+  $('hvTitle').textContent='กำลังโหลด...';$('hvTbl').innerHTML='';$('hvStats').innerHTML='';$('hvSub').textContent='';
+  card.scrollIntoView({behavior:'smooth',block:'start'});
+  try{
+    const h=await c.from('merge_history').select('id,created_at,carrier,note,summary').eq('id',id).maybeSingle();
+    if(h.error)throw h.error;
+    const d=await c.from('merge_history_rows').select('cols,datecols,rows').eq('id',id).maybeSingle();
+    if(d.error)throw d.error;
+    if(!d.data)throw new Error('รอบนี้บันทึกไว้ก่อนมีระบบเก็บรายแถว จึงไม่มีข้อมูลให้เปิดดู');
+    const cols=d.data.cols||TEMPLATE;
+    const rows=(d.data.rows||[]).map(function(a){const o={};cols.forEach(function(k,i){o[k]=a[i];});return o;});
+    const dc={};(d.data.datecols||[]).forEach(function(k){dc[k]=1;});
+    const meta=h.data||{}, sm=meta.summary||{};
+    hvState={id:id,rows:rows,dc:dc,carrier:meta.carrier||'',note:meta.note||''};
+    $('hvTitle').textContent=meta.note||('รอบที่ '+id);
+    $('hvSub').textContent=(meta.carrier||'')+' · '+(sm.fileF||'')+'  ✕  '+(sm.fileJ||'')+' · บันทึกเมื่อ '+fmtDate(meta.created_at);
+    $('hvStats').innerHTML=
+      '<div class="stat"><div class="l">แถวทั้งหมด</div><div class="v">'+rows.length.toLocaleString()+'</div></div>'+
+      '<div class="stat ok"><div class="l">จับคู่กับ JST สำเร็จ</div><div class="v">'+((sm.matched||0).toLocaleString())+'</div></div>'+
+      '<div class="stat ok"><div class="l">ยอด COD</div><div class="v" style="font-size:19px">'+money(sm.cod||0)+'</div></div>'+
+      '<div class="stat warn"><div class="l">ค่าขนส่ง</div><div class="v" style="font-size:19px">'+money(sm.fee||0)+'</div></div>';
+    const cap=300, view=rows.slice(0,cap);
+    $('hvInfo').textContent='แสดง '+view.length.toLocaleString()+' / '+rows.length.toLocaleString()+' แถว'+(rows.length>cap?' (ดูครบในไฟล์ Excel)':'');
+    let t='<tr><th>#</th>'+cols.map(x=>'<th>'+esc(x)+'</th>').join('')+'</tr>';
+    view.forEach(function(x,i){t+='<tr><td>'+(i+1)+'</td>'+cols.map(k=>'<td>'+esc(x[k])+'</td>').join('')+'</tr>';});
+    $('hvTbl').innerHTML=t;
+  }catch(e){
+    $('hvTitle').textContent='เปิดดูไม่สำเร็จ';
+    $('hvSub').innerHTML='<span style="color:var(--err)">'+esc(e.message||e)+'</span>';
+  }
+}
+window.openHistory=openHistory;
 async function delHistory(id){
   if(!confirm('ลบรายการนี้?'))return;
   const c=sbClient();if(!c)return;
-  try{const {error}=await c.from('merge_history').delete().eq('id',id);if(error)throw error;renderHistory();}
+  try{
+    try{await c.from('merge_history_rows').delete().eq('id',id);}catch(e2){}
+    const {error}=await c.from('merge_history').delete().eq('id',id);if(error)throw error;
+    if(hvState&&hvState.id===id){hvState=null;$('histViewCard').classList.add('hide');}
+    renderHistory();
+  }
   catch(e){alert('ลบไม่สำเร็จ: '+(e.message||e));}
 }
 window.delHistory=delHistory;
@@ -808,6 +887,12 @@ $('btnResetMap').onclick=function(){
   note('mapMsg','info','คืนค่าเริ่มต้นแล้ว — กด "บันทึกการตั้งค่า" เพื่อให้ทีมใช้ค่านี้');
 };
 $('btnReload').onclick=renderHistory;
+$('hvClose').onclick=function(){$('histViewCard').classList.add('hide');hvState=null;};
+$('hvDl').onclick=function(){
+  if(!hvState)return;
+  const safe=(hvState.note||'history').replace(/[\\/:*?"<>|]/g,'-').slice(0,60);
+  exportRows(hvState.rows,hvState.dc,'CS_upload_'+safe+'.xlsx');
+};
 document.querySelectorAll('.tab-btn').forEach(function(b){
   b.onclick=function(){
     document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));
