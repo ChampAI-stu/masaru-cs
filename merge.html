@@ -807,10 +807,10 @@ function sumTable(get,label){
   h+='<div class="tbl-scroll" style="max-height:none;margin-top:6px"><table><tr>'+
      '<th>ขนส่ง</th><th style="text-align:right">ยอดส่ง (ชิ้น)</th><th style="text-align:right">สัดส่วน</th>'+
      '<th style="text-align:right">ยอด COD</th><th style="text-align:right">ค่าขนส่ง</th>'+
-     '<th style="text-align:right">ค่าขนส่งเฉลี่ย/ชิ้น</th><th>'+label+'</th></tr>';
+     '<th style="text-align:right">ค่าขนส่งเฉลี่ย/ชิ้น</th><th>'+label+'</th><th>สถานะ</th></tr>';
   ks.forEach(function(k){
     const v=get(k), meta=CARRIERS[k];
-    if(!v){h+='<tr><td>'+meta.icon+' '+esc(meta.label)+'</td><td colspan="6" style="color:#93a0b4">— ไม่มีข้อมูล —</td></tr>';return;}
+    if(!v){h+='<tr><td>'+meta.icon+' '+esc(meta.label)+'</td><td colspan="7" style="color:#93a0b4">— ไม่มีข้อมูล —</td></tr>';return;}
     const pct=tot.n?(v.n/tot.n*100):0;
     h+='<tr><td><b>'+meta.icon+' '+esc(meta.label)+'</b></td>'+
        '<td style="text-align:right">'+v.n.toLocaleString()+'</td>'+
@@ -818,12 +818,16 @@ function sumTable(get,label){
        '<td style="text-align:right">'+money(v.cod)+'</td>'+
        '<td style="text-align:right">'+money(v.fee)+'</td>'+
        '<td style="text-align:right">'+money(v.n?v.fee/v.n:0)+'</td>'+
-       '<td style="font-size:11px;color:var(--muted)">'+esc(v.note||v.fileF||'')+'</td></tr>';
+       '<td style="font-size:11px;color:var(--muted)">'+esc(v.note||v.fileF||'')+'</td>'+
+       '<td style="font-size:11px">'+(v.note?'<span class="badge">'+esc(v.note)+'</span>':
+          (v.live?'<span class="badge" style="background:#e2efda;color:#1c4a2a">รอบนี้</span>'
+                :'<span class="badge" style="background:#fff6e0;color:#7a5300">รอบเก่า · '+esc(v.at?fmtDate(v.at).slice(0,16):'-')+'</span>'))+
+       '</td></tr>';
   });
   h+='<tr style="font-weight:800;background:#eef1f6"><td>รวมทั้งหมด</td>'+
      '<td style="text-align:right">'+tot.n.toLocaleString()+'</td><td style="text-align:right">100%</td>'+
      '<td style="text-align:right">'+money(tot.cod)+'</td><td style="text-align:right">'+money(tot.fee)+'</td>'+
-     '<td style="text-align:right">'+money(tot.n?tot.fee/tot.n:0)+'</td><td></td></tr></table></div>';
+     '<td style="text-align:right">'+money(tot.n?tot.fee/tot.n:0)+'</td><td></td><td></td></tr></table></div>';
   return h;
 }
 function renderSummary(){
@@ -832,14 +836,36 @@ function renderSummary(){
   if(!has){
     h='<div class="msg info">ยังไม่มีรอบที่ประมวลผล — ไปแท็บขนส่ง อัปไฟล์แล้วกด <b>ประมวลผล</b> อย่างน้อย 1 ขนส่ง</div>';
   }else{
-    const live=Object.keys(CARRIERS).some(k=>results[k]);
-    h='<div class="msg '+(live?'ok':'info')+'" style="font-size:12px">'+
-      (live?'ตัวเลขจากรอบที่ประมวลผลในหน้านี้':'⏱ ตัวเลขจากรอบล่าสุดที่บันทึกไว้ในเครื่อง (ไฟล์หายหลังรีเฟรช แต่ยอดยังอยู่) — อยากได้ตารางข้อมูลด้วยให้ประมวลผลใหม่')+
-      '</div>'+sumTable(statOf,'ไฟล์ขนส่ง');
-    h+='<div class="row" style="margin-top:12px"><button class="btn gold" id="btnDlSum">⬇ ดาวน์โหลดสรุป (Excel)</button></div>';
+    const ks=Object.keys(CARRIERS).filter(k=>statOf(k));
+    const stale=ks.filter(k=>!statOf(k).live);
+    const days={};
+    ks.forEach(function(k){const v=statOf(k);const d=v.at?fmtDate(v.at).slice(0,10):'?';days[d]=1;});
+    const mixed=Object.keys(days).length>1;
+    if(mixed)
+      h+='<div class="msg err" style="font-size:12px">⚠️ <b>ยอดรวมนี้มาจากคนละรอบ</b> — '+
+         Object.keys(CARRIERS).filter(k=>statOf(k)).map(function(k){
+           const v=statOf(k);return CARRIERS[k].label+': '+(v.at?fmtDate(v.at).slice(0,10):'-')+' ('+esc(v.fileF||'')+')';
+         }).join(' · ')+
+         '<br>ถ้าต้องการยอดของวันเดียวกัน ให้ประมวลผลทั้งสองขนส่งใหม่ หรือกด <b>ล้างยอดที่จำไว้</b> ก่อน</div>';
+    else if(stale.length)
+      h+='<div class="msg warn" style="font-size:12px">⏱ '+stale.map(k=>CARRIERS[k].label).join(' · ')+
+         ' เป็นยอดจากรอบก่อนที่จำไว้ในเครื่อง (ไฟล์หายหลังรีเฟรชแล้ว) — ดูคอลัมน์ <b>สถานะ</b></div>';
+    else
+      h+='<div class="msg ok" style="font-size:12px">ตัวเลขจากรอบที่ประมวลผลในหน้านี้</div>';
+    h+=sumTable(statOf,'ไฟล์ขนส่ง');
+    h+='<div class="row" style="margin-top:12px"><button class="btn gold" id="btnDlSum">⬇ ดาวน์โหลดสรุป (Excel)</button>'+
+       '<button class="btn ghost sm" id="btnClearSnap">🗑 ล้างยอดที่จำไว้</button></div>';
   }
   $('sumBox').innerHTML=h;
-  if(has)$('btnDlSum').onclick=downloadSummary;
+  if(has){
+    $('btnDlSum').onclick=downloadSummary;
+    $('btnClearSnap').onclick=function(){
+      if(!confirm('ล้างยอดที่จำไว้ของทุกขนส่ง? (ไฟล์ที่อัปในหน้านี้ยังอยู่ ยอดสะสมในฐานข้อมูลไม่ถูกลบ)'))return;
+      snap={flash:null,post:null};saveSnap();
+      Object.keys(CARRIERS).forEach(function(k){if(!store[k].F||!store[k].J)results[k]=null;});
+      renderSummary();
+    };
+  }
   renderPeriod();
 }
 /* ---- สรุปจากประวัติที่บันทึกบนฐานข้อมูล (ไม่หายแม้เปลี่ยนเครื่อง) ---- */
@@ -885,22 +911,23 @@ async function loadPeriod(){
   }catch(e){$('periodBox').innerHTML='<div class="msg err">รวมยอดไม่สำเร็จ: '+esc(e.message||e)+'</div>';}
 }
 function downloadSummary(){
-  const ks=Object.keys(CARRIERS).filter(k=>results[k]);
+  const ks=Object.keys(CARRIERS).filter(k=>statOf(k));
   const rows=ks.map(function(k){
-    const r=results[k];
-    return {'ขนส่ง':CARRIERS[k].label,'ยอดส่ง (ชิ้น)':r.rows.length,
-            'ยอด COD':Math.round(r.cod*100)/100,'ค่าขนส่ง':Math.round(r.fee*100)/100,
-            'ค่าขนส่งเฉลี่ย/ชิ้น':r.rows.length?Math.round(r.fee/r.rows.length*100)/100:0,
-            'ไฟล์ขนส่ง':r.fileF,'ไฟล์ JST':r.fileJ};
+    const v=statOf(k);
+    return {'ขนส่ง':CARRIERS[k].label,'ยอดส่ง (ชิ้น)':v.n,
+            'ยอด COD':Math.round(v.cod*100)/100,'ค่าขนส่ง':Math.round(v.fee*100)/100,
+            'ค่าขนส่งเฉลี่ย/ชิ้น':v.n?Math.round(v.fee/v.n*100)/100:0,
+            'ไฟล์ขนส่ง':v.fileF||'','ไฟล์ JST':v.fileJ||'',
+            'รอบเมื่อ':v.at?fmtDate(v.at):'','สถานะ':v.live?'รอบนี้':'รอบเก่า (จำไว้ในเครื่อง)'};
   });
   const t=rows.reduce(function(a,b){a['ยอดส่ง (ชิ้น)']+=b['ยอดส่ง (ชิ้น)'];a['ยอด COD']+=b['ยอด COD'];a['ค่าขนส่ง']+=b['ค่าขนส่ง'];return a;},
-                      {'ขนส่ง':'รวมทั้งหมด','ยอดส่ง (ชิ้น)':0,'ยอด COD':0,'ค่าขนส่ง':0,'ค่าขนส่งเฉลี่ย/ชิ้น':0,'ไฟล์ขนส่ง':'','ไฟล์ JST':''});
+    {'ขนส่ง':'รวมทั้งหมด','ยอดส่ง (ชิ้น)':0,'ยอด COD':0,'ค่าขนส่ง':0,'ค่าขนส่งเฉลี่ย/ชิ้น':0,'ไฟล์ขนส่ง':'','ไฟล์ JST':'','รอบเมื่อ':'','สถานะ':''});
   t['ยอด COD']=Math.round(t['ยอด COD']*100)/100;
   t['ค่าขนส่ง']=Math.round(t['ค่าขนส่ง']*100)/100;
   t['ค่าขนส่งเฉลี่ย/ชิ้น']=t['ยอดส่ง (ชิ้น)']?Math.round(t['ค่าขนส่ง']/t['ยอดส่ง (ชิ้น)']*100)/100:0;
   rows.push(t);
   const ws=XLSX.utils.json_to_sheet(rows);
-  ws['!cols']=[{wch:18},{wch:14},{wch:16},{wch:14},{wch:20},{wch:26},{wch:26}];
+  ws['!cols']=[{wch:18},{wch:14},{wch:16},{wch:14},{wch:20},{wch:26},{wch:26},{wch:20},{wch:24}];
   const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'สรุป');
   const d=new Date();
   XLSX.writeFile(wb,'CS_summary_'+pad(d.getDate())+'-'+pad(d.getMonth()+1)+'-'+d.getFullYear()+'.xlsx');
