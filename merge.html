@@ -186,6 +186,7 @@
         <button class="btn gold" id="btnDl">⬇ ดาวน์โหลด Excel</button>
         <button class="btn ghost sm" id="btnMiss">แสดงเฉพาะแถวที่จับคู่ไม่ได้</button>
         <button class="btn ghost sm" id="btnSave">💾 บันทึกลงประวัติ + เข้ารายงาน</button>
+        <button class="btn ghost sm" id="btnPush">📤 ส่งเข้ารายงานผู้บริหาร</button>
         <span class="badge" id="viewInfo"></span>
       </div>
       <div id="saveMsg"></div>
@@ -736,6 +737,34 @@ async function loadCfg(){
 }
 
 /* ===================== ประวัติ ===================== */
+async function pushParcels(quiet){
+  const r=results[carrier];
+  if(!r)return {ok:false,msg:' (ไม่มีผลลัพธ์ให้ส่ง)'};
+  const c=sbClient();
+  if(!c)return {ok:false,msg:' (เชื่อมฐานข้อมูลไม่ได้)'};
+  const payload=r.rows.map(function(x){
+    const d=String(x['Pickup date']||'').slice(0,10);
+    return {tracking:String(x['Tracking No.']||'').trim(),carrier:carrier,
+            ship_date:/^\d{4}-\d{2}-\d{2}$/.test(d)?d:null,
+            order_no:String(x['Order No.']||''),
+            cod:Number(x['COD Amt'])||0,fee:Number(x._fee)||0};
+  }).filter(function(x){return x.tracking;});
+  if(!payload.length)return {ok:false,msg:' (ไม่มีเลขพัสดุให้ส่ง)'};
+  const noDate=payload.filter(function(x){return !x.ship_date;}).length;
+  try{
+    let done=0;
+    for(let i=0;i<payload.length;i+=500){
+      const r2=await c.rpc('bulk_parcel_upsert',{p:payload.slice(i,i+500)});
+      if(r2.error)throw r2.error;
+      done+=Number(r2.data)||0;
+    }
+    let m=' · ส่งเข้ารายงานผู้บริหาร '+done.toLocaleString()+' ชิ้น';
+    if(noDate)m+=' ⚠️ ในจำนวนนี้ '+noDate.toLocaleString()+' ชิ้นไม่มีวันที่ฝากส่ง จะไม่ถูกนับเข้าเดือนไหนเลย';
+    return {ok:true,msg:m,done:done,noDate:noDate};
+  }catch(e){
+    return {ok:false,msg:' ❌ ส่งเข้ารายงานไม่สำเร็จ: '+esc(e.message||e.hint||JSON.stringify(e))};
+  }
+}
 async function saveHistory(){
   const r=results[carrier];if(!r)return;
   const c=sbClient();
@@ -761,23 +790,8 @@ async function saveHistory(){
       const {error:e2}=await c.from('merge_history_rows').insert({id:hid,cols:TEMPLATE,datecols:Object.keys(dc),rows:packed});
       if(e2)throw e2;
     }catch(e2){rowMsg=' (แต่เก็บข้อมูลรายแถวไม่ได้ จะเปิดดูซ้ำไม่ได้: '+esc(e2.message||e2)+')';}
-    /* ส่งพัสดุรายชิ้นเข้ารายงานผู้บริหาร */
-    let pMsg='';
-    try{
-      const payload=r.rows.map(function(x){
-        return {tracking:String(x['Tracking No.']||'').trim(),carrier:carrier,
-                ship_date:(String(x['Pickup date']||'').slice(0,10))||null,
-                order_no:String(x['Order No.']||''),
-                cod:Number(x['COD Amt'])||0,fee:Number(x._fee)||0};
-      }).filter(function(x){return x.tracking;});
-      let done=0;
-      for(let i=0;i<payload.length;i+=500){
-        const {error:e3}=await c.rpc('bulk_parcel_upsert',{p:payload.slice(i,i+500)});
-        if(e3)throw e3;
-        done+=Math.min(500,payload.length-i);
-      }
-      pMsg=' · ส่งเข้ารายงานผู้บริหาร '+done.toLocaleString()+' ชิ้น';
-    }catch(e3){pMsg=' (ยังไม่ได้ส่งเข้ารายงานผู้บริหาร: '+esc(e3.message||e3)+')';}
+    const pRes=await pushParcels(true);
+    const pMsg=pRes.msg;
     note('saveMsg',(rowMsg||pMsg.indexOf('ยังไม่ได้')>=0)?'warn':'ok','✅ บันทึกลงประวัติแล้ว'+rowMsg+pMsg);
   }catch(e){note('saveMsg','err','⚠️ บันทึกไม่สำเร็จ: '+esc(e.message||e)+'');}
 }
@@ -1188,7 +1202,7 @@ function applyCarrier(){
 document.querySelectorAll('.ctab').forEach(function(b){
   b.onclick=function(){carrier=b.dataset.carrier;applyCarrier();};
 });
-document.querySelectorAll('.drop').forEach(function(d){
+document.querySelectorAll('.drop[data-slot]').forEach(function(d){
   d.addEventListener('click',function(){pendingSlot=d.dataset.slot;$('filePick').click();});
   d.addEventListener('dragover',function(e){e.preventDefault();d.classList.add('over');});
   d.addEventListener('dragleave',function(){d.classList.remove('over');});
@@ -1202,6 +1216,13 @@ $('filePick').addEventListener('change',function(e){
 $('btnRun').onclick=run;
 $('btnDl').onclick=download;
 $('btnSave').onclick=saveHistory;
+$('btnPush').onclick=async function(){
+  const b=this;b.disabled=true;const t=b.textContent;b.textContent='กำลังส่ง...';
+  note('saveMsg','info','⏳ กำลังส่งพัสดุเข้ารายงานผู้บริหาร...');
+  const r=await pushParcels(false);
+  note('saveMsg',r.ok?(r.noDate?'warn':'ok'):'err',(r.ok?'✅':'')+r.msg.replace(/^ · /,''));
+  b.textContent=t;b.disabled=false;
+};
 $('btnMiss').onclick=function(){
   missOnly=!missOnly;
   this.textContent=missOnly?'แสดงทุกแถว':'แสดงเฉพาะแถวที่จับคู่ไม่ได้';
