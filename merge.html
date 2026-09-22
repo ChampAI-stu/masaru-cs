@@ -229,36 +229,46 @@
   <div id="tab-status" class="hide">
     <div class="card">
       <h2>🔄 อัปเดตสถานะปลายทาง <span class="badge" id="curCarrier3"></span></h2>
-      <div class="sub2">ดึงไฟล์จากขนส่งซ้ำอีกครั้งหลังส่งไปแล้ว 7–10 วัน แล้วลากลงที่นี่ · ระบบจะอัปเดตสถานะของพัสดุตามเลขพัสดุ เพื่อให้รายงานผู้บริหารรู้ว่าเซ็นรับ/ตีกลับกี่ชิ้น</div>
-      <div class="drop" id="dropS" style="max-width:520px">
-        <div class="t" id="lblS">📄 ไฟล์สถานะจากขนส่ง</div>
-        <div class="d" id="nameS">ยังไม่ได้เลือกไฟล์</div>
+      <div class="sub2">ลากไฟล์ที่มีเลขพัสดุ + สถานะ · ระบบอ่านคำในคอลัมน์สถานะแล้วแยกให้เอง</div>
+      <div class="drop" id="dropW" style="max-width:560px">
+        <div class="t">📄 ไฟล์สถานะจากขนส่ง</div>
+        <div class="d" id="nameW">ยังไม่ได้เลือกไฟล์</div>
+        <div class="cols">เลขพัสดุ + สถานะ (wallet / return)</div>
       </div>
       <input type="file" id="filePickS" accept=".xlsx,.xls" class="hide">
       <div id="stMsg" style="margin-top:12px"></div>
-      <div class="row" style="margin-top:14px" id="stCfgRow">
-        <div><div style="font-size:12px;color:var(--muted);margin-bottom:4px">หัวตารางอยู่แถวที่</div>
-          <input type="number" id="stHdr" min="1" max="20" value="1" style="width:100px"></div>
-        <div><div style="font-size:12px;color:var(--muted);margin-bottom:4px">คอลัมน์เลขพัสดุ</div><select id="stTrk"></select></div>
-        <div><div style="font-size:12px;color:var(--muted);margin-bottom:4px">คอลัมน์สถานะ</div><select id="stSt"></select></div>
-        <div><div style="font-size:12px;color:var(--muted);margin-bottom:4px">คอลัมน์เลขตีกลับ (ถ้ามี)</div><select id="stRet"></select></div>
-      </div>
+
       <div class="row" style="margin-top:14px">
+        <div><div style="font-size:12px;color:var(--muted);margin-bottom:4px">หัวตารางแถวที่</div>
+          <input type="number" id="wHdr" min="1" max="30" value="1" style="width:92px"></div>
+        <div><div style="font-size:12px;color:var(--muted);margin-bottom:4px">คอลัมน์เลขพัสดุ / เลขออเดอร์</div><select id="wTrk"></select></div>
+        <div><div style="font-size:12px;color:var(--muted);margin-bottom:4px">คอลัมน์สถานะ</div><select id="wSt"></select></div>
+      </div>
+
+      <div class="row" style="margin-top:14px">
+        <div style="flex:1;min-width:250px"><div style="font-size:12px;color:var(--ok);font-weight:700;margin-bottom:4px">✅ คำที่แปลว่า เซ็นรับ</div>
+          <input type="text" id="kwDel" style="width:100%;max-width:none;padding:8px 10px;border:1px solid #d5dbe6;border-radius:8px;font-family:inherit;font-size:13px"></div>
+        <div style="flex:1;min-width:250px"><div style="font-size:12px;color:var(--err);font-weight:700;margin-bottom:4px">↩️ คำที่แปลว่า ตีกลับ</div>
+          <input type="text" id="kwRet" style="width:100%;max-width:none;padding:8px 10px;border:1px solid #d5dbe6;border-radius:8px;font-family:inherit;font-size:13px"></div>
+      </div>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:6px">คั่นด้วยจุลภาค · ไม่ต้องพิมพ์ทั้งประโยค ใส่แค่คำที่มีอยู่ในข้อความก็พอ · ที่ไม่เข้าทั้งสองกลุ่ม = ระหว่างการติดตาม</div>
+
+      <div class="row" style="margin-top:16px">
         <button class="btn go" id="btnStPrev" disabled>🔍 ตรวจก่อนอัปเดต</button>
         <button class="btn gold" id="btnStGo" disabled>⬆ อัปเดตสถานะ</button>
+        <button class="btn ghost sm" id="btnStClear">ล้างไฟล์</button>
       </div>
       <div id="stPrev" style="margin-top:14px"></div>
     </div>
     <div class="card">
-      <h2>🏷️ คำที่ใช้แปลสถานะ</h2>
-      <div class="sub2">ระบบดูข้อความสถานะแล้วจัดเป็น 3 กลุ่ม — แก้คำได้ถ้าขนส่งเปลี่ยนคำเรียก</div>
-      <div class="row">
-        <div style="flex:1;min-width:260px"><div style="font-size:12px;color:var(--muted);margin-bottom:4px">✅ ถือว่า <b>เซ็นรับ</b> (คั่นด้วยจุลภาค)</div>
-          <input type="text" id="wDel" style="width:100%;max-width:none;padding:8px 10px;border:1px solid #d5dbe6;border-radius:7px;font-family:inherit;font-size:13px"></div>
-        <div style="flex:1;min-width:260px"><div style="font-size:12px;color:var(--muted);margin-bottom:4px">↩️ ถือว่า <b>ตีกลับ</b></div>
-          <input type="text" id="wRet" style="width:100%;max-width:none;padding:8px 10px;border:1px solid #d5dbe6;border-radius:7px;font-family:inherit;font-size:13px"></div>
+      <h2>📍 สถานะพัสดุในระบบตอนนี้</h2>
+      <div class="sub2">นับจากพัสดุทั้งหมดที่เคยกด "บันทึกลงประวัติ + เข้ารายงาน" ไว้</div>
+      <div class="row" style="margin-bottom:12px">
+        <div><div style="font-size:12px;color:var(--muted);margin-bottom:4px">ตั้งแต่ (เว้นว่าง = ทั้งหมด)</div><input type="date" id="sFrom"></div>
+        <div><div style="font-size:12px;color:var(--muted);margin-bottom:4px">ถึง</div><input type="date" id="sTo"></div>
+        <button class="btn sm" id="btnStSum">ดูสถานะ</button>
       </div>
-      <div class="row" style="margin-top:12px"><button class="btn" id="btnSaveWords">💾 บันทึกคำที่ใช้แปล</button><span class="badge" id="wMsg"></span></div>
+      <div id="stSum"></div>
     </div>
   </div>
 
@@ -841,105 +851,162 @@ async function delHistory(id){
 }
 window.delHistory=delHistory;
 
-/* ===================== อัปเดตสถานะ ===================== */
-const DEF_WORDS={delivered:'เซ็นรับ,นำจ่ายสำเร็จ,ส่งสำเร็จ,จัดส่งสำเร็จ,delivered,signed',
-                 returned:'ตีกลับ,ส่งคืน,คืนต้นทาง,นำจ่ายไม่สำเร็จ,return,undeliver'};
-function words(){
-  const c=C();
-  return {delivered:(c.wDelivered||DEF_WORDS.delivered),returned:(c.wReturned||DEF_WORDS.returned)};
-}
+/* ===================== อัปเดตสถานะ (ไฟล์เดียว มีคอลัมน์สถานะ) ===================== */
+const KW_DEF={del:'wallet,เซ็นรับ,นำจ่ายสำเร็จ,ส่งสำเร็จ,delivered,signed',
+              ret:'return,ตีกลับ,ส่งคืน,คืนต้นทาง,นำจ่ายไม่สำเร็จ,undeliver'};
+let stF=null, stRows=null;
+
+function kwList(v){return String(v||'').split(',').map(function(x){return x.trim().toLowerCase();}).filter(Boolean);}
 function classify(txt){
   const t=clean(txt).toLowerCase();
-  if(!t)return '';
-  const w=words();
-  const hit=function(list){return list.split(',').map(x=>x.trim().toLowerCase()).filter(Boolean).some(k=>t.indexOf(k)>=0);};
-  if(hit(w.returned))return 'returned';
-  if(hit(w.delivered))return 'delivered';
+  if(!t)return 'transit';
+  const hit=function(l){return l.some(function(k){return t.indexOf(k)>=0;});};
+  if(hit(kwList($('kwRet').value)))return 'returned';
+  if(hit(kwList($('kwDel').value)))return 'delivered';
   return 'transit';
 }
-let stFile=null, stPrevRows=null;
-function stOptions(sel,pref){
-  const rows=stFile?sliced(stFile.raw,$('stHdr').value):null;
-  const hs=(rows&&rows[0])?rows[0].map((h,i)=>[colName(i),clean(h)]):[];
-  let html='<option value="">— ไม่มี —</option>';
-  hs.forEach(function(p){html+='<option value="'+p[0]+'"'+(p[0]===pref?' selected':'')+'>'+p[0]+' · '+esc(p[1]||'(ไม่มีชื่อ)')+'</option>';});
-  $(sel).innerHTML=html;
-  if(pref)$(sel).value=pref;
+function stHeaders(){
+  const rows=stF?sliced(stF.raw,$('wHdr').value):null;
+  return (rows&&rows[0])?rows[0].map(function(h,i){return [colName(i),clean(h)];}):[];
+}
+function stOpts(sel,want,allowNone){
+  const hs=stHeaders();
+  if(!hs.length){$(sel).innerHTML='<option value="">—</option>';return;}
+  let pick=allowNone?'':hs[0][0];
+  for(let i=0;i<hs.length;i++){
+    const n=(hs[i][1]||'').toLowerCase();
+    if(want.some(function(w){return n.indexOf(w)>=0;})){pick=hs[i][0];break;}
+  }
+  let h=allowNone?'<option value="">— ไม่มี (ทั้งไฟล์คือเซ็นรับ) —</option>':'';
+  h+=hs.map(function(p){
+    return '<option value="'+p[0]+'"'+(p[0]===pick?' selected':'')+'>'+p[0]+' · '+esc(p[1]||'(ไม่มีชื่อ)')+'</option>';
+  }).join('');
+  $(sel).innerHTML=h;
 }
 function stRefreshCols(){
-  const def=carrier==='flash'?{t:'G',s:'J',r:'I'}:{t:'B',s:'',r:''};
-  stOptions('stTrk',def.t);stOptions('stSt',def.s);stOptions('stRet',def.r);
-  const ok=!!stFile;
-  $('btnStPrev').disabled=!ok;$('btnStGo').disabled=true;
+  stOpts('wTrk',['barcode','tracking','เลขพัสดุ','เลขที่พัสดุ','หมายเลขพัสดุ','order','เลขออเดอร์','หมายเลขคำสั่งซื้อ'],false);
+  stOpts('wSt',['สถานะ','status','state'],true);
+  $('btnStPrev').disabled=!stF;
+  $('btnStGo').disabled=true;
 }
 async function stHandle(file){
   note('stMsg','info','⏳ กำลังอ่าน '+esc(file.name)+' ...');
   try{
     const raw=await readSheet(file);
     if(!raw.length)throw new Error('ไฟล์ว่าง');
-    stFile={name:file.name,raw:raw};
-    const g=guessHeaderRow(raw);$('stHdr').value=g;
-    $('nameS').textContent=file.name;$('dropS').classList.add('done');
+    stF={name:file.name,raw:raw};
+    const g=guessHeaderRow(raw);
+    $('wHdr').value=g;
+    $('nameW').textContent=file.name+' · '+Math.max(0,raw.length-g).toLocaleString()+' แถว';
+    $('dropW').classList.add('done');
     stRefreshCols();
-    note('stMsg','ok','✅ อ่านไฟล์แล้ว — เลือกคอลัมน์ให้ถูก แล้วกด "ตรวจก่อนอัปเดต"');
+    note('stMsg','ok','✅ อ่านไฟล์แล้ว — ตรวจคอลัมน์ให้ถูก แล้วกด "ตรวจก่อนอัปเดต"');
   }catch(e){note('stMsg','err','❌ '+esc(e.message||e));}
 }
 function stPreview(){
-  const rows=sliced(stFile.raw,$('stHdr').value);
-  const ti=colIdx($('stTrk').value||'A'), si=$('stSt').value?colIdx($('stSt').value):-1, ri=$('stRet').value?colIdx($('stRet').value):-1;
-  const out=[],cnt={delivered:0,returned:0,transit:0,blank:0};
-  const seen=new Set();
+  const rows=sliced(stF.raw,$('wHdr').value);
+  const ti=colIdx($('wTrk').value||'A'), si=$('wSt').value?colIdx($('wSt').value):-1;
+  const seen={}, out=[], cnt={delivered:0,returned:0,transit:0}, kinds={};
   for(let i=1;i<rows.length;i++){
-    const t=clean(rows[i][ti]);if(!t||seen.has(t))continue;seen.add(t);
+    const k=clean(rows[i][ti]);
+    if(!k||seen[k])continue;
+    seen[k]=1;
     const raw=si>=0?clean(rows[i][si]):'';
-    const st=classify(raw);
-    if(!raw)cnt.blank++;else cnt[st]=(cnt[st]||0)+1;
-    out.push({tracking:t,status:raw,state:st,return_tracking:ri>=0?clean(rows[i][ri]):''});
+    const st=si>=0?classify(raw):'delivered';
+    cnt[st]++;
+    if(raw&&!kinds[raw])kinds[raw]={state:st,n:0};
+    if(raw)kinds[raw].n++;
+    out.push({k:k,state:st});
   }
-  stPrevRows=out;
-  const samples={};
-  out.forEach(function(x){if(x.status&&!samples[x.state+'|'+x.status])samples[x.state+'|'+x.status]=1;});
+  stRows=out;
   let h='<div class="stats">'+
     '<div class="stat"><div class="l">เลขพัสดุในไฟล์</div><div class="v">'+out.length.toLocaleString()+'</div></div>'+
-    '<div class="stat ok"><div class="l">✅ เซ็นรับ</div><div class="v">'+(cnt.delivered||0).toLocaleString()+'</div></div>'+
-    '<div class="stat warn"><div class="l">↩️ ตีกลับ</div><div class="v">'+(cnt.returned||0).toLocaleString()+'</div></div>'+
-    '<div class="stat"><div class="l">🚚 ยังไม่ถึงปลายทาง</div><div class="v">'+(cnt.transit||0).toLocaleString()+'</div></div>'+
+    '<div class="stat ok"><div class="l">✅ จะติดว่าเซ็นรับ</div><div class="v">'+cnt.delivered.toLocaleString()+'</div></div>'+
+    '<div class="stat warn"><div class="l">↩️ จะติดว่าตีกลับ</div><div class="v">'+cnt.returned.toLocaleString()+'</div></div>'+
+    '<div class="stat"><div class="l">🔎 ระหว่างการติดตาม</div><div class="v">'+cnt.transit.toLocaleString()+'</div></div>'+
     '</div>';
-  const keys=Object.keys(samples).slice(0,14);
+  const keys=Object.keys(kinds).sort(function(a,b){return kinds[b].n-kinds[a].n;}).slice(0,20);
   if(keys.length){
-    h+='<div class="tbl-scroll" style="max-height:230px"><table><tr><th>ข้อความสถานะในไฟล์</th><th>ระบบแปลเป็น</th></tr>';
-    keys.forEach(function(k){
-      const st=k.split('|')[0], tx=k.slice(st.length+1);
-      const lbl=st==='delivered'?'<span class="badge" style="background:#e2efda;color:#1c4a2a">เซ็นรับ</span>':
-                st==='returned'?'<span class="badge" style="background:#fff6e0;color:#7a5300">ตีกลับ</span>':
-                '<span class="badge">ยังไม่ถึงปลายทาง</span>';
-      h+='<tr><td>'+esc(tx)+'</td><td>'+lbl+'</td></tr>';
+    h+='<div class="tbl-scroll" style="max-height:260px"><table><tr><th>ข้อความสถานะในไฟล์</th><th class="r">จำนวน</th><th>ระบบแปลเป็น</th></tr>';
+    keys.forEach(function(t){
+      const st=kinds[t].state;
+      const lbl=st==='delivered'?'<span class="badge" style="background:#e2efda;color:#1c4a2a">✅ เซ็นรับ</span>':
+                st==='returned'?'<span class="badge" style="background:#fdeceb;color:#7a1512">↩️ ตีกลับ</span>':
+                '<span class="badge">🔎 ระหว่างการติดตาม</span>';
+      h+='<tr><td style="font-family:monospace">'+esc(t)+'</td><td style="text-align:right">'+kinds[t].n.toLocaleString()+'</td><td>'+lbl+'</td></tr>';
     });
-    h+='</table></div><div style="font-size:12px;color:var(--muted);margin-top:8px">ถ้าแปลผิด ให้แก้คำในการ์ดด้านล่างแล้วกดตรวจใหม่</div>';
+    h+='</table></div><div style="font-size:12px;color:var(--muted);margin-top:8px">แปลผิด? แก้คำในช่องด้านบนแล้วกด "ตรวจก่อนอัปเดต" ใหม่</div>';
   }
-  if(!cnt.delivered&&!cnt.returned)
-    h+='<div class="msg warn" style="margin-top:12px">⚠️ ไม่พบพัสดุที่เซ็นรับหรือตีกลับเลย — ไฟล์นี้อาจดึงเร็วเกินไป (ยังอยู่ระหว่างขนส่ง) หรือเลือกคอลัมน์สถานะผิด</div>';
+  if(si<0)
+    h+='<div class="msg warn" style="margin-top:12px">ไม่ได้เลือกคอลัมน์สถานะ — ระบบจะติดว่า <b>เซ็นรับ</b> ให้ทั้งไฟล์</div>';
   $('stPrev').innerHTML=h;
   $('btnStGo').disabled=!out.length;
 }
 async function stApply(){
-  if(!stPrevRows||!stPrevRows.length)return;
+  if(!stRows||!stRows.length)return;
   const c=sbClient();
   if(!c){note('stMsg','err','⚠️ เชื่อมฐานข้อมูลไม่ได้');return;}
   const btn=$('btnStGo');btn.disabled=true;const t0=btn.textContent;
-  let hit=0;
+  const jobs=[
+    {state:'delivered',status:'เซ็นรับ (จากไฟล์สถานะ)',label:'เซ็นรับ'},
+    {state:'returned', status:'ตีกลับ (จากไฟล์สถานะ)', label:'ตีกลับ'},
+    {state:'transit',  status:'ระหว่างการติดตาม',      label:'ระหว่างติดตาม'}
+  ];
+  const res={};
   try{
-    for(let i=0;i<stPrevRows.length;i+=500){
-      btn.textContent='กำลังอัปเดต '+Math.min(i+500,stPrevRows.length).toLocaleString()+'/'+stPrevRows.length.toLocaleString()+'...';
-      const {data,error}=await c.rpc('bulk_parcel_status',{p:stPrevRows.slice(i,i+500)});
-      if(error)throw error;
-      hit+=Number(data)||0;
+    for(let q=0;q<jobs.length;q++){
+      const j=jobs[q];
+      const list=stRows.filter(function(x){return x.state===j.state;});
+      let hit=0;
+      for(let i=0;i<list.length;i+=500){
+        btn.textContent='กำลังอัปเดต '+j.label+' '+Math.min(i+500,list.length).toLocaleString()+'/'+list.length.toLocaleString()+'...';
+        const r2=await c.rpc('bulk_parcel_mark',{p:list.slice(i,i+500).map(function(x){return {k:x.k};}),
+                                                p_state:j.state,p_status:j.status});
+        if(r2.error)throw r2.error;
+        hit+=Number(r2.data)||0;
+      }
+      res[j.state]={sent:list.length,hit:hit};
     }
-    const miss=stPrevRows.length-hit;
-    note('stMsg',miss?'warn':'ok','✅ อัปเดตแล้ว '+hit.toLocaleString()+' ชิ้น'+
-      (miss?' · อีก '+miss.toLocaleString()+' ชิ้นไม่พบในระบบ (รอบที่ส่งยังไม่ได้กด "บันทึกลงประวัติ")':''));
+    const d=res.delivered,rt=res.returned,tr=res.transit;
+    const miss=(d.sent-d.hit)+(rt.sent-rt.hit)+(tr.sent-tr.hit);
+    note('stMsg',miss?'warn':'ok',
+      '✅ อัปเดตแล้ว — เซ็นรับ '+d.hit.toLocaleString()+' · ตีกลับ '+rt.hit.toLocaleString()+' · ระหว่างติดตาม '+tr.hit.toLocaleString()+' ชิ้น'+
+      (miss?'<br><span style="font-size:12px">อีก '+miss.toLocaleString()+' รายการไม่พบในระบบ — เป็นพัสดุของรอบที่ยังไม่ได้กด "บันทึกลงประวัติ + เข้ารายงาน" ข้ามไปได้เลย ไม่มีผลเสีย</span>':''));
+    stSummary();
   }catch(e){note('stMsg','err','❌ อัปเดตไม่สำเร็จ: '+esc(e.message||e));}
   finally{btn.textContent=t0;btn.disabled=false;}
+}
+async function stSummary(){
+  const c=sbClient();
+  if(!c){$('stSum').innerHTML='<div class="msg err">เชื่อมฐานข้อมูลไม่ได้</div>';return;}
+  $('stSum').innerHTML='<div class="msg info">⏳ กำลังนับ...</div>';
+  try{
+    const r2=await c.rpc('parcel_state_summary',{p_from:$('sFrom').value||null,p_to:$('sTo').value||null,p_carrier:null});
+    if(r2.error)throw r2.error;
+    const m={delivered:{parcels:0,cod:0},returned:{parcels:0,cod:0},transit:{parcels:0,cod:0}};
+    (r2.data||[]).forEach(function(r){
+      const k=(r.state==='delivered'||r.state==='returned')?r.state:'transit';
+      m[k].parcels+=Number(r.parcels)||0;m[k].cod+=Number(r.cod)||0;
+    });
+    const tot=m.delivered.parcels+m.returned.parcels+m.transit.parcels;
+    if(!tot){$('stSum').innerHTML='<div class="msg warn">ยังไม่มีพัสดุในระบบ — ไปแท็บรวมไฟล์ กด "บันทึกลงประวัติ + เข้ารายงาน" ก่อน</div>';return;}
+    const p=function(n){return (n/tot*100).toFixed(1)+'%';};
+    $('stSum').innerHTML=
+      '<div class="stats">'+
+      '<div class="stat"><div class="l">พัสดุทั้งหมด</div><div class="v">'+tot.toLocaleString()+'</div></div>'+
+      '<div class="stat ok"><div class="l">✅ เซ็นรับแล้ว</div><div class="v">'+m.delivered.parcels.toLocaleString()+'</div>'+
+        '<div style="font-size:11px;color:var(--muted)">'+p(m.delivered.parcels)+' · เก็บเงินได้ '+money(m.delivered.cod)+'</div></div>'+
+      '<div class="stat warn"><div class="l">↩️ ตีกลับ</div><div class="v">'+m.returned.parcels.toLocaleString()+'</div>'+
+        '<div style="font-size:11px;color:var(--muted)">'+p(m.returned.parcels)+' · COD ที่ไม่ได้เงิน '+money(m.returned.cod)+'</div></div>'+
+      '<div class="stat"><div class="l">🔎 เหลือที่ต้องตาม</div><div class="v" style="color:var(--err)">'+m.transit.parcels.toLocaleString()+'</div>'+
+        '<div style="font-size:11px;color:var(--muted)">'+p(m.transit.parcels)+' · ยอด COD ค้าง '+money(m.transit.cod)+'</div></div>'+
+      '</div>'+
+      '<div style="height:10px;border-radius:5px;background:#eef1f6;overflow:hidden;display:flex;margin-top:6px">'+
+        '<i style="display:block;height:100%;width:'+(m.delivered.parcels/tot*100)+'%;background:#1B7F4C"></i>'+
+        '<i style="display:block;height:100%;width:'+(m.returned.parcels/tot*100)+'%;background:#B0121A"></i>'+
+        '<i style="display:block;height:100%;width:'+(m.transit.parcels/tot*100)+'%;background:#c4ccda"></i>'+
+      '</div>';
+  }catch(e){$('stSum').innerHTML='<div class="msg err">นับไม่สำเร็จ: '+esc(e.message||e)+'</div>';}
 }
 
 /* ===================== สรุปรวม ===================== */
@@ -1099,11 +1166,12 @@ function applyCarrier(){
   $('curCarrier').textContent=meta.icon+' '+meta.label;
   $('curCarrier2').textContent=meta.icon+' '+meta.label;
   $('curCarrier3').textContent=meta.icon+' '+meta.label;
-  $('lblS').textContent='📄 ไฟล์สถานะจาก'+meta.label;
-  $('wDel').value=C().wDelivered||DEF_WORDS.delivered;
-  $('wRet').value=C().wReturned||DEF_WORDS.returned;
-  stFile=null;stPrevRows=null;$('nameS').textContent='ยังไม่ได้เลือกไฟล์';
-  $('dropS').classList.remove('done');$('stMsg').innerHTML='';$('stPrev').innerHTML='';
+  stF=null;stRows=null;
+  if($('nameW'))$('nameW').textContent='ยังไม่ได้เลือกไฟล์';
+  if($('dropW'))$('dropW').classList.remove('done');
+  $('stMsg').innerHTML='';$('stPrev').innerHTML='';
+  if(!$('kwDel').value)$('kwDel').value=KW_DEF.del;
+  if(!$('kwRet').value)$('kwRet').value=KW_DEF.ret;
   stRefreshCols();
   $('lblF').textContent=meta.icon+' ไฟล์ที่ 1 — '+meta.label;
   ['F','J'].forEach(function(sl){
@@ -1152,21 +1220,20 @@ $('btnResetMap').onclick=function(){
 };
 $('btnReload').onclick=renderHistory;
 $('btnPeriod').onclick=loadPeriod;
-$('dropS').addEventListener('click',function(){$('filePickS').click();});
-$('dropS').addEventListener('dragover',function(e){e.preventDefault();$('dropS').classList.add('over');});
-$('dropS').addEventListener('dragleave',function(){$('dropS').classList.remove('over');});
-$('dropS').addEventListener('drop',function(e){e.preventDefault();$('dropS').classList.remove('over');
+$('dropW').addEventListener('click',function(){$('filePickS').click();});
+$('dropW').addEventListener('dragover',function(e){e.preventDefault();$('dropW').classList.add('over');});
+$('dropW').addEventListener('dragleave',function(){$('dropW').classList.remove('over');});
+$('dropW').addEventListener('drop',function(e){e.preventDefault();$('dropW').classList.remove('over');
   if(e.dataTransfer.files[0])stHandle(e.dataTransfer.files[0]);});
 $('filePickS').addEventListener('change',function(e){if(e.target.files[0])stHandle(e.target.files[0]);e.target.value='';});
-$('stHdr').onchange=stRefreshCols;
+$('wHdr').onchange=stRefreshCols;
 $('btnStPrev').onclick=stPreview;
 $('btnStGo').onclick=stApply;
-$('btnSaveWords').onclick=async function(){
-  C().wDelivered=$('wDel').value.trim()||DEF_WORDS.delivered;
-  C().wReturned=$('wRet').value.trim()||DEF_WORDS.returned;
-  cacheLocal();await saveCfg();
-  $('wMsg').textContent='บันทึกแล้ว';
-  if(stFile&&stPrevRows)stPreview();
+$('btnStSum').onclick=stSummary;
+$('btnStClear').onclick=function(){
+  stF=null;stRows=null;
+  $('nameW').textContent='ยังไม่ได้เลือกไฟล์';$('dropW').classList.remove('done');
+  $('stMsg').innerHTML='';$('stPrev').innerHTML='';stRefreshCols();
 };
 $('hvClose').onclick=function(){$('histViewCard').classList.add('hide');hvState=null;};
 $('hvDl').onclick=function(){
