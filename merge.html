@@ -613,6 +613,20 @@ input,select,textarea{border-color:#e0d5e6;border-radius:10px;background:#fff;co
 @media(max-width:900px){.merge-hero-art{width:33%;right:0}.merge-speech{right:3%}}
 @media(max-width:700px){.merge-hero-art{width:160px;right:-18px;bottom:-8px}.merge-speech{display:none}.auth-bubble{max-width:130px;padding:10px;font-size:11px}}
 @media(max-width:420px){.merge-hero-art{width:140px;right:-21px;bottom:-7px}}
+
+/* history table — fit in frame, actions always visible */
+.hist-scroll{max-height:560px}
+.hist-tbl{width:100%;font-size:13px}
+.hist-tbl th,.hist-tbl td{padding:9px 10px;vertical-align:middle}
+.hist-tbl th.r,.hist-tbl td.r{text-align:right}
+.hist-tbl td small{display:block;font-size:11.5px;color:var(--muted);margin-top:2px}
+.hist-tbl td.wrap{white-space:normal;min-width:120px;max-width:190px}
+.hist-tbl td.files span{display:block;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:190px}
+.hist-tbl td.miss-n{color:#c2416b;font-weight:800}
+.hist-tbl .act{position:sticky;right:0;background:#fff;box-shadow:-8px 0 10px -8px rgba(90,60,120,.25);text-align:center}
+.hist-tbl th.act{background:#f6effa;z-index:2}
+.hist-tbl td.act .btn{display:block;width:100%;margin:2px 0;padding:5px 10px}
+.hist-tbl tr:hover td.act{background:#fcf5ff}
 </style>
 </head>
 <body>
@@ -1271,15 +1285,17 @@ async function renderHistory(){
     const {data,error}=await c.from('merge_history').select('id,created_at,carrier,note,summary').order('id',{ascending:false}).limit(200);
     if(error)throw error;
     if(!data||!data.length){$('histBox').innerHTML='<div class="empty"><span class="ico">🕘</span>ยังไม่มีประวัติ — ประมวลผลแล้วกด <b>💾 บันทึกรอบนี้</b></div>';return;}
-    let h='<div class="tbl-scroll" style="max-height:560px"><table><tr><th>วันที่/เวลา</th><th>ขนส่ง</th><th>บันทึก</th><th>ไฟล์ขนส่ง</th><th>ไฟล์ JST</th><th>ทั้งหมด</th><th>จับคู่ได้</th><th>ไม่พบ</th><th>โดย</th><th style="text-align:right">ยอด COD</th><th style="text-align:right">ค่าขนส่ง</th><th></th></tr>';
+    let h='<div class="tbl-scroll hist-scroll"><table class="hist-tbl"><tr><th>วันที่/เวลา</th><th>ขนส่ง / บันทึก</th><th>ไฟล์ที่ใช้</th><th class="r">ทั้งหมด</th><th class="r">จับคู่ได้</th><th class="r">ไม่พบ</th><th>โดย</th><th class="r">ยอด COD</th><th class="r">ค่าขนส่ง</th><th class="act"></th></tr>';
     data.forEach(function(r){
       const s=r.summary||{};
-      h+='<tr><td>'+esc(fmtDate(r.created_at))+'</td><td>'+esc(r.carrier||'-')+'</td><td>'+esc(r.note)+'</td>'+
-         '<td>'+esc(s.fileF)+'</td><td>'+esc(s.fileJ)+'</td>'+
-         '<td>'+((s.total||0).toLocaleString())+'</td><td>'+((s.matched||0).toLocaleString())+'</td>'+
-         '<td>'+((s.missing||0).toLocaleString())+'</td><td>'+esc(String(s.by||'').split('@')[0])+'</td>'+
-         '<td style="text-align:right">'+money(s.cod||0)+'</td><td style="text-align:right">'+money(s.fee||0)+'</td>'+
-         '<td><button class="btn sm navy" onclick="openHistory('+r.id+')">เปิดดู</button> '+
+      const dt=String(fmtDate(r.created_at)).split(' ');
+      h+='<tr><td>'+esc(dt[0])+'<small>'+esc(dt.slice(1).join(' '))+'</small></td>'+
+         '<td class="wrap"><b>'+esc(r.carrier||'-')+'</b><small>'+esc(r.note||'')+'</small></td>'+
+         '<td class="wrap files"><span title="ไฟล์ขนส่ง">📦 '+esc(s.fileF||'-')+'</span><span title="ไฟล์ JST">🧾 '+esc(s.fileJ||'-')+'</span></td>'+
+         '<td class="r">'+((s.total||0).toLocaleString())+'</td><td class="r">'+((s.matched||0).toLocaleString())+'</td>'+
+         '<td class="r'+((s.missing||0)>0?' miss-n':'')+'">'+((s.missing||0).toLocaleString())+'</td><td>'+esc(String(s.by||'').split('@')[0])+'</td>'+
+         '<td class="r">'+money(s.cod||0)+'</td><td class="r">'+money(s.fee||0)+'</td>'+
+         '<td class="act"><button class="btn sm navy" onclick="openHistory('+r.id+')">เปิดดู</button>'+
          '<button class="btn danger sm" onclick="delHistory('+r.id+')">ลบ</button></td></tr>';
     });
     $('histBox').innerHTML=h+'</table></div>';
