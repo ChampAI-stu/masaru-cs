@@ -396,8 +396,10 @@ function baseMap(extra){
   Object.keys(extra||{}).forEach(function(k){m[k]=Object.assign({},extra[k]);});
   return m;
 }
+const GS_URL='https://script.google.com/macros/s/AKfycbxk9LKz7kgZPn2I0PI-BjIB5bNwGBxjdU8XDk6G6tA_T8hvv_sHRNalIzIw4vplINFq/exec';
+const GS_TOKEN='MASARU-CS-2026';
 const DEFAULTS={
-  flash:{headerF:1,headerJ:1,keyF:'G',keyJ:'F',feeCol:'AK',map:baseMap({
+  flash:{headerF:1,headerJ:1,keyF:'G',keyJ:'F',feeCol:'AK',gsUrl:GS_URL,gsToken:GS_TOKEN,map:baseMap({
     'Tracking No.':{src:'F',col:'G' ,fmt:'text'},
     'Pickup date' :{src:'F',col:'A' ,fmt:'dateonly'},
     'Status'      :{src:'F',col:'J' ,fmt:'text'},
@@ -406,7 +408,7 @@ const DEFAULTS={
   })},
   /* ไปรษณีย์ไทย — ตรวจกับไฟล์เฉลย 1_TP_31_08_2026.xlsx แล้ว 915/915
      หัวตารางอยู่แถวที่ 5 · แถวที่ 4 มีวันที่ฝากส่ง */
-  post :{headerF:5,headerJ:1,keyF:'B',keyJ:'F',feeCol:'J',map:baseMap({
+  post :{headerF:5,headerJ:1,keyF:'B',keyJ:'F',feeCol:'J',gsUrl:GS_URL,gsToken:GS_TOKEN,map:baseMap({
     'Tracking No.':{src:'F',col:'B',fmt:'text'},
     'Pickup date' :{src:'H',col:'' ,fmt:'text'},
     'weight'      :{src:'F',col:'C',fmt:'num'},
@@ -1310,8 +1312,8 @@ function applyCarrier(){
   if($('nameW'))$('nameW').textContent='ยังไม่ได้เลือกไฟล์';
   if($('dropW'))$('dropW').classList.remove('done');
   $('stMsg').innerHTML='';$('stPrev').innerHTML='';
-  $('gsUrl').value=C().gsUrl||'';
-  $('gsToken').value=C().gsToken||'';
+  $('gsUrl').value=C().gsUrl||GS_URL;
+  $('gsToken').value=C().gsToken||GS_TOKEN;
   $('gsMsg').textContent='';
   if(!$('kwDel').value)$('kwDel').value=KW_DEF.del;
   if(!$('kwRet').value)$('kwRet').value=KW_DEF.ret;
