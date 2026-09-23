@@ -561,7 +561,7 @@ span.num,.step{width:32px;height:32px;background:linear-gradient(135deg,#b18ddb,
 .cbadge,body.theme-post .cbadge{background:#f5ebfb;color:#895dad;border:1px solid #ead5f1;padding:4px 12px}body.theme-post .cbadge{background:#fff0f7;color:#c46290;border-color:#f6d8e8}
 .drop{position:relative;min-height:142px;padding:21px 20px 20px 78px;border:1.5px dashed #cdb4dc;border-radius:19px;background:linear-gradient(140deg,#fffafd,#fbf6ff);box-shadow:inset 0 1px 0 white;transition:border-color .25s,background .25s,transform .25s,box-shadow .25s}
 .drop::before{content:'✦';position:absolute;left:21px;top:23px;width:39px;height:39px;display:grid;place-items:center;background:#f5eafb;border:1px solid #ebd9f2;border-radius:13px;color:#a077c1;font-size:20px;transform:rotate(-7deg);transition:transform .3s,background .3s}
-#dropF::before{content:'📦'}#dropJ::before{content:'🧾'}#dropW::before{content:'📄'}
+#dropF::before{content:'📦'}#dropJ::before{content:'🧾'}#dropW::before{content:'📄'}#dropFee::before{content:'💰'}
 .drop:hover,.drop.over{border-color:#ad7bd0;background:#f8efff;transform:translateY(-3px);box-shadow:0 12px 23px #8866ad1a}.drop:hover::before,.drop.over::before{transform:rotate(8deg) scale(1.08)}
 .drop.done,.drop.has{border-style:solid;border-color:#a9d9c4;background:linear-gradient(130deg,#f8fef9,#effaf4)}.drop.done::after,.drop.has::after{content:'✓';position:absolute;right:15px;top:13px;width:23px;height:23px;display:grid;place-items:center;border-radius:50%;background:#d8f3e5;color:#3e8461;font-size:13px;font-weight:800}
 .drop .t{color:#4a4074}.drop .d{word-break:break-word}.drop.done .d{color:#407f67}
@@ -836,6 +836,23 @@ input,select,textarea{border-color:#e0d5e6;border-radius:10px;background:#fff;co
         <button class="btn ghost sm" id="btnStClear">ล้าง</button>
       </div>
       <div id="stPrev" style="margin-top:14px"></div>
+    </div>
+
+    <div class="card" id="feeCard">
+      <div class="card-h"><div class="grow"><h2>💰 เติมค่าขนส่งย้อนหลัง</h2>
+        <p class="desc">ใช้เมื่อรายงานผู้บริหารแสดงค่าขนส่งต่ำผิดปกติ — ใส่ไฟล์ขนส่งต้นฉบับ (Flash / ไปรษณีย์) ได้หลายไฟล์พร้อมกัน ไม่ต้องใช้ไฟล์ JST · ระบบแก้เฉพาะช่องค่าขนส่งของพัสดุที่มีในระบบแล้ว</p></div></div>
+      <div class="drop" id="dropFee" style="min-height:96px;max-width:640px">
+        <div class="t">💰 ไฟล์ขนส่งต้นฉบับ (เลือกได้หลายไฟล์)</div>
+        <div class="d" id="nameFee">ยังไม่ได้เลือกไฟล์</div>
+        <div class="cols">ลากไฟล์มาวาง หรือคลิกเพื่อเลือก · ระบบแยก Flash / ไปรษณีย์ให้เอง</div>
+      </div>
+      <input type="file" id="filePickFee" accept=".xlsx,.xls" multiple class="hide">
+      <div id="feeMsg" style="margin-top:12px"></div>
+      <div id="feePrev" style="margin-top:12px"></div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn go" id="btnFeeGo" disabled>💰 เติมค่าขนส่ง</button>
+        <button class="btn ghost sm" id="btnFeeClear">ล้าง</button>
+      </div>
     </div>
 
     <div class="card">
@@ -1827,6 +1844,93 @@ $('dropW').addEventListener('dragleave',function(){$('dropW').classList.remove('
 $('dropW').addEventListener('drop',function(e){e.preventDefault();$('dropW').classList.remove('over');
   if(e.dataTransfer.files[0])stHandle(e.dataTransfer.files[0]);});
 $('filePickS').addEventListener('change',function(e){if(e.target.files[0])stHandle(e.target.files[0]);e.target.value='';});
+
+/* ===================== เติมค่าขนส่งย้อนหลัง (อัปเดตเฉพาะช่อง fee) ===================== */
+let feeFiles=[];   /* [{name,carrier,rows:[{k,f}],n,withFee,sum}] */
+function feeRender(){
+  const ok=feeFiles.filter(function(x){return x.carrier;});
+  $('nameFee').textContent=feeFiles.length?feeFiles.length+' ไฟล์':'ยังไม่ได้เลือกไฟล์';
+  $('dropFee').classList.toggle('done',ok.length>0);
+  if(!feeFiles.length){$('feePrev').innerHTML='';$('btnFeeGo').disabled=true;return;}
+  let tot=0,sum=0;
+  let h='<div class="tbl-scroll"><table><tr><th>ไฟล์</th><th>ขนส่ง</th><th style="text-align:right">พัสดุ</th><th style="text-align:right">มีค่าขนส่ง</th><th style="text-align:right">ยอดค่าขนส่ง</th><th></th></tr>';
+  feeFiles.forEach(function(x,i){
+    if(x.carrier){tot+=x.withFee;sum+=x.sum;}
+    h+='<tr><td>'+esc(x.name)+'</td><td>'+(x.carrier?esc(CARRIERS[x.carrier].label):'<span style="color:#c2416b">'+esc(x.err||'ไม่ใช่ไฟล์ขนส่ง')+'</span>')+'</td>'+
+       '<td style="text-align:right">'+(x.carrier?x.n.toLocaleString():'-')+'</td><td style="text-align:right">'+(x.carrier?x.withFee.toLocaleString():'-')+'</td>'+
+       '<td style="text-align:right">'+(x.carrier?money(x.sum):'-')+'</td>'+
+       '<td><button class="btn ghost sm" data-feedel="'+i+'">เอาออก</button></td></tr>';
+  });
+  h+='<tr class="tot"><td colspan="3">รวม '+ok.length+' ไฟล์</td><td style="text-align:right">'+tot.toLocaleString()+'</td><td style="text-align:right">'+money(sum)+'</td><td></td></tr></table></div>';
+  $('feePrev').innerHTML=h;
+  $('btnFeeGo').disabled=!tot;
+}
+async function feeAdd(files){
+  const list=Array.from(files||[]);if(!list.length)return;
+  note('feeMsg','info','⏳ กำลังอ่าน '+list.length+' ไฟล์ ...');
+  for(const file of list){
+    const item={name:file.name,carrier:null,rows:[],n:0,withFee:0,sum:0};
+    try{
+      const raw=await readSheet(file);
+      let k=null;
+      if(detect(raw,cfg.flash.headerF)==='FLASH')k='flash';
+      else if(detect(raw,cfg.post.headerF)==='POST')k='post';
+      if(!k){item.err=/jst/i.test(file.name)||detect(raw,1)==='J'?'ไฟล์ JST — ไม่ต้องใช้':'ไม่ใช่ไฟล์ขนส่ง';feeFiles.push(item);continue;}
+      const c=cfg[k];
+      if(!c.feeCol){item.err='ยังไม่ได้ตั้งคอลัมน์ค่าขนส่ง';feeFiles.push(item);continue;}
+      const rows=sliced(raw,c.headerF), kI=colIdx(c.keyF), fI=colIdx(c.feeCol);
+      for(let i=1;i<rows.length;i++){
+        const key=clean((rows[i]||[])[kI]);if(!key)continue;
+        item.n++;
+        const fv=fmtNum((rows[i]||[])[fI]);
+        if(typeof fv==='number'&&isFinite(fv)&&fv>0){item.rows.push({k:key,f:fv});item.withFee++;item.sum+=fv;}
+      }
+      if(!item.n)item.err='ไม่พบเลขพัสดุในไฟล์';
+      else if(!item.withFee)item.err='ไฟล์นี้ไม่มีค่าขนส่ง';
+      else item.carrier=k;
+    }catch(e){console.error(e);item.err='อ่านไฟล์ไม่สำเร็จ';}
+    feeFiles.push(item);
+  }
+  const bad=feeFiles.filter(function(x){return !x.carrier;}).length;
+  note('feeMsg',bad?'warn':'ok',bad?'⚠️ มี '+bad+' ไฟล์ที่ใช้ไม่ได้ (ดูในตาราง) — ไฟล์อื่นเติมได้ตามปกติ':'✅ อ่านไฟล์ครบแล้ว — ตรวจยอดในตาราง แล้วกด <b>💰 เติมค่าขนส่ง</b>');
+  feeRender();
+}
+async function feeApply(){
+  const c=sbClient();if(!c){note('feeMsg','err','❌ เชื่อมต่อเซิร์ฟเวอร์ไม่ได้');return;}
+  const m=new Map();
+  feeFiles.forEach(function(x){if(x.carrier)x.rows.forEach(function(r){m.set(r.k,r.f);});});
+  const payload=Array.from(m,function(e){return {k:e[0],f:e[1]};});
+  if(!payload.length)return;
+  if(!await App.confirm('เติมค่าขนส่งให้พัสดุ '+payload.length.toLocaleString()+' ชิ้น?',{ok:'เติมค่าขนส่ง'}))return;
+  const btn=$('btnFeeGo');btn.disabled=true;
+  let done=0;
+  try{
+    for(let i=0;i<payload.length;i+=500){
+      note('feeMsg','info','⏳ กำลังบันทึก '+Math.min(i+500,payload.length).toLocaleString()+' / '+payload.length.toLocaleString()+' ชิ้น ...');
+      const r=await c.rpc('bulk_parcel_fee',{p:payload.slice(i,i+500)});
+      if(r.error)throw r.error;
+      done+=Number(r.data)||0;
+    }
+    const miss=payload.length-done;
+    note('feeMsg','ok','✅ เติมค่าขนส่งแล้ว '+done.toLocaleString()+' ชิ้น'+
+      (miss>0?' · อีก '+miss.toLocaleString()+' ชิ้นยังไม่มีในระบบ (ยังไม่เคยกดบันทึกรอบ) จึงข้ามไป':'')+
+      ' — เปิดรายงานผู้บริหารเพื่อดูยอดใหม่');
+    App.toast('เติมค่าขนส่งแล้ว '+done.toLocaleString()+' ชิ้น','ok');
+    feeFiles=[];feeRender();
+  }catch(e){
+    const t=App.errText(e,'bulk_parcel_fee');
+    note('feeMsg','err','❌ บันทึกไม่สำเร็จ'+(done?' (สำเร็จไปแล้ว '+done.toLocaleString()+' ชิ้น)':'')+' — '+esc(/bulk_parcel_fee|function|42883|PGRST202/i.test(String(e.message||e.code||''))?'ระบบยังไม่ได้ติดตั้งฟังก์ชันเติมค่าขนส่ง — แจ้งผู้ดูแลระบบ':t));
+    btn.disabled=false;
+  }
+}
+$('dropFee').addEventListener('click',function(){$('filePickFee').click();});
+$('dropFee').addEventListener('dragover',function(e){e.preventDefault();$('dropFee').classList.add('over');});
+$('dropFee').addEventListener('dragleave',function(){$('dropFee').classList.remove('over');});
+$('dropFee').addEventListener('drop',function(e){e.preventDefault();$('dropFee').classList.remove('over');feeAdd(e.dataTransfer.files);});
+$('filePickFee').addEventListener('change',function(e){feeAdd(e.target.files);e.target.value='';});
+$('feePrev').addEventListener('click',function(e){const b=e.target.closest('[data-feedel]');if(!b)return;feeFiles.splice(+b.dataset.feedel,1);feeRender();if(!feeFiles.length)$('feeMsg').innerHTML='';});
+$('btnFeeGo').addEventListener('click',feeApply);
+$('btnFeeClear').addEventListener('click',function(){feeFiles=[];feeRender();$('feeMsg').innerHTML='';});
 $('wHdr').onchange=stRefreshCols;
 $('btnStPrev').onclick=stPreview;
 $('btnStGo').onclick=stApply;
