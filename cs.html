@@ -379,7 +379,7 @@ details.more summary{cursor:pointer;color:var(--blue);font-size:13.5px;font-weig
   /* ---------- หน้าเข้าสู่ระบบ ---------- */
   function renderAuth(subtitle){
     var w=document.createElement('div');w.id='authScreen';w.className='auth';
-    w.innerHTML='<div class="auth-card">'+
+    w.innerHTML='<div class="audit-auth-stage"><div class="auth-card">'+
       '<div class="alogo"><img src="'+LOGO+'" alt="MASARU"></div>'+
       '<h2>MASARU CS</h2><div class="asub">'+esc(subtitle||'ระบบงานฝ่าย CS')+' — เข้าสู่ระบบเพื่อใช้งาน</div>'+
       '<div id="loginBox">'+
@@ -396,7 +396,10 @@ details.more summary{cursor:pointer;color:var(--blue);font-size:13.5px;font-weig
         '<button class="btn primary" id="su_btn">สมัครสมาชิก</button>'+
         '<div class="msg err hide" id="su_err"></div><div class="msg ok hide" id="su_ok"></div>'+
         '<div class="switch">มีบัญชีแล้ว? <span class="link" id="au_toLogin">เข้าสู่ระบบ</span></div>'+
-      '</div></div>';
+      '</div></div><section class="audit-auth-art" aria-hidden="true">'+
+      '<span class="audit-auth-stamp">✦ LITTLE AUDIT STUDIO</span><svg class="audit-auth-illustration" viewBox="0 0 600 520"><use href="#audit-login-art"/></svg>'+
+      '<div class="audit-auth-note" id="auditAuthNote">มาส่องบิลให้ชัดกันนะ ♡</div>'+
+      '<div class="audit-auth-copy"><small>MASARU CS HUB</small><h1>A closer look.</h1><p>ตรวจละเอียดทุกยอด เพื่อให้ทุกงานสบายใจ</p></div></section></div>';
     document.body.appendChild(w);
     return w;
   }
@@ -517,14 +520,152 @@ details.more summary{cursor:pointer;color:var(--blue);font-size:13.5px;font-weig
   .claim-filters .field{min-width:170px}
   #clTbl td:nth-child(8){white-space:normal;min-width:180px}
 </style>
+<style>
+/* MASARU CS HUB · shipping audit atelier */
+:root{--navy:#332d62;--navy-2:#3a3567;--navy-3:#5a508b;--brand:#e763a6;--brand-2:#d34b96;--blue:#9071be;--gold:#8670b1;--ok:#3e8668;--warn:#a5773a;--err:#c04b74;--violet:#8966b7;--slate:#6b7898;--ink:#34324f;--muted:#746c87;--faint:#9c95aa;--line:#e9dfed;--line-2:#f5eff9;--bg:#fcf9ff;--card:#fff;--ok-bg:#eaf8f1;--warn-bg:#fff6e8;--err-bg:#fff0f5;--info-bg:#f4eeff;--violet-bg:#f3ebfa;--r-sm:10px;--r:14px;--r-lg:20px;--sh:0 8px 22px rgba(82,58,124,.06);--sh-lg:0 24px 54px rgba(56,39,92,.22)}
+body{min-height:100vh;overflow-x:hidden;background:radial-gradient(ellipse at 4% 14%,#f1e8fc,transparent 31%),radial-gradient(ellipse at 95% 70%,#ffeaf4,transparent 32%),var(--bg);color:var(--ink)}
+body::before{content:'';position:fixed;z-index:-1;inset:0;pointer-events:none;background-image:radial-gradient(#d7c6e4 1px,transparent 1.2px);background-size:24px 24px;opacity:.24}
+button,input,select,textarea{font-family:inherit}
+button:focus-visible,a:focus-visible,.drop:focus-visible,.subtabs button:focus-visible{outline:3px solid #a67bd0;outline-offset:3px}
+.audit-art-library{position:absolute;width:0;height:0;overflow:hidden}
+.mhead{background:#f0dfff;color:#413670;border-bottom:1px solid #ddcbea;box-shadow:0 5px 19px rgba(75,49,110,.08)}
+.mhead-in{max-width:1280px;min-height:76px;padding:10px 25px}.mtitle{font-size:18px;color:#3e366d}.mtitle .logo{height:27px;background:#37335f;padding:5px 9px;border-radius:8px;box-sizing:content-box}.msub{font-size:11px;color:#9373a7;font-weight:700;letter-spacing:.08em}.mright .who{color:#685981;font-size:12px;background:#fff;border:1px solid #e2cdeb;border-radius:99px;padding:7px 13px}.mbtn{color:#665183;background:#fffbff;border:1px solid #dfcbe9;border-radius:99px;padding:8px 15px;transition:transform .2s,background .2s}.mbtn:hover{background:#f7eefa;border-color:#c7a6d8;transform:translateY(-2px)}
+.page{max-width:1280px;padding:28px 24px 60px;position:relative}
+.page-head{display:flex;align-items:center;position:relative;isolation:isolate;min-height:285px;margin-bottom:18px;padding:36px 49px;border:1px solid #e1d1ed;border-radius:27px;overflow:hidden;background:radial-gradient(circle at 79% 30%,#fff 0 16%,transparent 16.2%),linear-gradient(110deg,#f4eaff,#fffafa 60%,#f4e8fa);box-shadow:0 17px 39px #6e509518}
+.page-head::before{content:'';position:absolute;z-index:-1;inset:0;background-image:linear-gradient(35deg,#e9dcf0 1px,transparent 1px);background-size:28px 28px;mask-image:linear-gradient(90deg,transparent 10%,#000);opacity:.58}
+.page-head::after{content:'✧          ₿          ✦';position:absolute;right:5%;top:15px;font-size:21px;letter-spacing:25px;color:#c09bd0;white-space:nowrap;pointer-events:none;animation:stars-breathe 5s ease-in-out infinite}@keyframes stars-breathe{50%{transform:translateY(-6px);opacity:.54}}
+.page-head>div:first-child{position:relative;z-index:2;max-width:62%}.page-head>div:first-child::before{content:'✦  SHIPPING COST AUDIT';display:block;margin-bottom:10px;font-size:11px;font-weight:800;letter-spacing:.18em;color:#a978ae}
+.page-head h1{color:#352d68;font-size:clamp(28px,3vw,39px);letter-spacing:-.035em;line-height:1.2}.page-head p{color:#716a89;max-width:650px;font-size:14px;line-height:1.66;margin:11px 0 0}
+.audit-hero-art{position:absolute;z-index:1;right:1%;bottom:-13px;width:min(36%,430px);height:auto;filter:drop-shadow(0 13px 8px #77629421);animation:balance-float 6s ease-in-out infinite;pointer-events:none}@keyframes balance-float{50%{transform:translateY(-8px) rotate(.4deg)}}
+.audit-status{display:inline-flex;align-items:center;gap:9px;margin-top:21px;padding:8px 14px;border:1px solid #e5d4f0;border-radius:99px;background:#fffefa;color:#82679a;font-size:12px;font-weight:700;box-shadow:0 6px 13px #72568716;transition:background .25s,border-color .25s,color .25s}
+.audit-status::before{content:'◌';width:22px;height:22px;display:grid;place-items:center;border-radius:50%;background:#f4e8fa;color:#9473be;font-size:20px;line-height:1}
+.audit-status[data-stage=ready]{background:#fff6fb;border-color:#f3bfd8;color:#b9508e}.audit-status[data-stage=ready]::before{content:'✦';font-size:13px;background:#ffe2f0;color:#d9609d}
+.audit-status[data-stage=done]{background:#f2fbf5;border-color:#c4e4d0;color:#428360}.audit-status[data-stage=done]::before{content:'✓';font-size:14px;background:#ddf3e5;color:#408963}
+.audit-fleck{position:absolute;z-index:1;bottom:-22px;width:9px;height:15px;background:#f8c8dc;border:1px solid #e9b4d1;border-radius:2px;opacity:0;pointer-events:none;animation:fleck-rise 13s linear infinite}.audit-fleck:nth-of-type(1){left:9%;animation-delay:-2s;--drift:46px}.audit-fleck:nth-of-type(2){left:43%;animation-delay:-8s;--drift:-52px;background:#e0cff4}.audit-fleck:nth-of-type(3){left:72%;animation-delay:-5s;--drift:30px;background:#ffefd0}.audit-fleck:nth-of-type(4){left:90%;animation-delay:-11s;--drift:-71px;background:#dbefdf}@keyframes fleck-rise{0%{opacity:0;transform:translate(0,0) rotate(0)}14%{opacity:.8}78%{opacity:.5}100%{opacity:0;transform:translate(var(--drift),-300px) rotate(235deg)}}
+.subtabs{background:#fffdfa;border-color:#e9deee;border-radius:18px;gap:4px;padding:5px;box-shadow:var(--sh)}.subtabs button{color:#776b8c;border-radius:12px;font-size:13.5px;transition:background .2s,transform .2s}.subtabs button:hover{background:#f7eefb;transform:translateY(-1px)}.subtabs button.active{background:linear-gradient(110deg,#ad8bd6,#8c70bd);color:#fff;box-shadow:0 5px 13px #8c70bd3d}
+.card{background:linear-gradient(155deg,#fff,#fff 74%,#fffcff);border-color:#e9dfee;border-radius:21px;box-shadow:0 9px 25px #6650820d;padding:24px;margin-bottom:18px}.card>h2,.card-h h2,.card h3{color:#41376f}.card-h h2{font-size:17px}.card .sub2,.card .desc{color:#776f89}.card-h{margin-bottom:18px}
+.step,span.num{width:32px;height:32px;border-radius:11px;background:linear-gradient(135deg,#b392da,#8d6bbd);box-shadow:0 5px 12px #9778b93b}
+.drop{position:relative;min-height:151px;padding:22px 18px 20px 72px;border:1.5px dashed #cbb3df;border-radius:18px;background:linear-gradient(145deg,#fffbff,#faf5ff);transition:border-color .25s,background .25s,transform .25s,box-shadow .25s}
+.drop::before{content:'🧾';position:absolute;left:18px;top:21px;width:40px;height:40px;display:grid;place-items:center;border:1px solid #e8d8f2;border-radius:13px;background:#f3eafb;font-size:21px;transform:rotate(-7deg);transition:transform .25s}
+#drop_flash::before{content:'📦'}#drop_post::before{content:'📮'}.drop:hover,.drop.over{border-color:#ad80d0;background:#f8f0ff;transform:translateY(-3px);box-shadow:0 12px 21px #8a6cad1b}.drop:hover::before,.drop.over::before{transform:rotate(9deg) scale(1.08)}
+.drop.has,.drop.done{border-style:solid;border-color:#a5d7be;background:linear-gradient(135deg,#f9fefa,#eef9f2)}.drop.has::after,.drop.done::after{content:'✓';position:absolute;top:13px;right:13px;width:22px;height:22px;display:grid;place-items:center;background:#dbf2e4;border-radius:50%;font-size:13px;font-weight:800;color:#3e855e}.drop .t{color:#473c70}.drop .d{word-break:break-word}.drop.has .d{color:#418260}.drop .t .req{color:#c0528b;background:#fff0f6}.drop .t .opt{color:#8b78a3;background:#f1eafa}
+.btn{border-radius:11px;transition:transform .18s,box-shadow .18s,background .18s}.btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 7px 15px #64508024}.btn:disabled{background:#d4cada!important;color:#fff!important}.btn,.btn.navy{background:#7962a9}.btn:hover,.btn.navy:hover{background:#67518f}.btn.primary,.btn.go{background:linear-gradient(110deg,#f175b5,#e65ba5);box-shadow:0 7px 16px #e65ba532}.btn.primary:hover,.btn.go:hover{background:linear-gradient(110deg,#ea6cab,#d64997)}.btn.gold{background:#498d71}.btn.gold:hover{background:#38765e}.btn.ghost,.btn.danger{background:#fff;color:#6b5783;border-color:#e3d6e9}.btn.ghost:hover,.btn.danger:hover{background:#f8f0fa}
+input,select,textarea{color:#3d3857;border-color:#dfd5e6;border-radius:10px}input:focus,select:focus,textarea:focus{border-color:#b58bd3;box-shadow:0 0 0 3px #eeddf8}label{color:#6f6682}.toolbar .filter{max-width:280px}
+.kpi,.stat{background:#fff;border-color:#e9dfec;border-radius:15px}.kpi::before,.stat::before{background:#9a79c3}.kpi .n,.kpi .v,.stat .v{color:#4e417c}.kpi.hero{background:#473870;border-color:#473870}.kpi.hero .n,.kpi.hero .v{color:#fff}.kpi.hero .l,.kpi.hero .s{color:#e5dbf4}
+.tbl-scroll{border-color:#e8ddeb;border-radius:15px}th{background:#f6eff9;color:#564777;border-color:#e7ddec}td{border-color:#f1eaf2}table tr:hover td{background:#faf4fd}tr.tot td{background:#f6f0f9!important}tr.ok td{background:#f2fbf5}tr.over td{background:#fff1f6}tr.under td{background:#fff7eb}tr.weight td{background:#f3f1fc}tr.special td{background:#f9f0fb}
+.msg.info,.note{background:#f5effd;border-color:#e4d7f0;color:#655184}.msg.ok,.note.ok{background:#edf9f2;border-color:#cbe8d6;color:#347152}.msg.warn,.note.warn-soft{background:#fff7e9;border-color:#f0dfba;color:#896320}.msg.err,.note.warn{background:#fff0f5;border-color:#f1cbdc;color:#9f3e65}
+.alert.bad{background:#fff2f7;border-color:#f1c9dc}.alert.good{background:#edfaf3;border-color:#c7e9d4}.breakdown{background:#faf5ff;border-color:#e7d9f2}.breakdown .big{color:#4e3b78}.badge.info{background:#f3ecfa;color:#785ea2}.badge.ok{background:#eaf8f1;color:#3e8668}
+.modal-bg{background:#30234b77}.modal{border:1px solid #e4d6ed;border-radius:20px}.modal h3{color:#443871}#loading,.loading{background:#fff8ffdc}.spinner{border-color:#e6d9f1;border-top-color:#cf6baf}.lmsg{color:#655084}.toast{background:#5e4e7d}.toast.ok{background:#377a57}.toast.warn{background:#966f41}.toast.err{background:#9d426a}.foot{color:#a69bb0}
+/* Different login composition: form at left, a cheerful audit scene at right. */
+.auth{background:radial-gradient(circle at 8% 16%,#9d8fca,transparent 32%),radial-gradient(circle at 95% 85%,#a69bcb,transparent 30%),#7774af;overflow:auto;padding:20px}
+.audit-auth-stage{display:grid;grid-template-columns:minmax(370px,.9fr) minmax(0,1.1fr);width:min(1170px,100%);min-height:min(720px,calc(100svh - 40px));background:#fffdfa;border:1px solid #e1cbea;border-radius:24px;overflow:hidden;box-shadow:0 30px 80px #3a2b6455;animation:auth-rise .6s ease-out both}@keyframes auth-rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.auth .auth-card{width:auto;max-width:none;border-radius:0;background:linear-gradient(145deg,#fffefd,#fff9fc 75%,#f8f0ff);box-shadow:none;padding:50px clamp(29px,5vw,68px);display:flex;flex-direction:column;justify-content:center}
+.auth-card .alogo{width:max-content;background:#37335f;border-radius:13px;padding:13px 17px;box-shadow:0 6px 15px #37335f21}.auth-card .alogo img{height:27px}.auth-card h2{color:#342d67;font-size:30px;letter-spacing:-.03em;line-height:1.2;margin-bottom:7px}.auth-card .asub{font-size:14px;color:#786e8c;line-height:1.55;margin-bottom:25px}.auth-card .asub::before{content:'✦  ';color:#e977ac}.auth-card .fld{margin-bottom:15px}.auth-card label{color:#5c5374}.auth-card input{height:50px;border-radius:12px}.auth-card .btn{height:51px;margin-top:13px}.auth-card .switch{font-size:14px;color:#7f758f;margin-top:20px}.auth-card .link{color:#d74c97;text-decoration:underline;text-decoration-color:#eaaed0;text-underline-offset:3px}
+.audit-auth-art{position:relative;isolation:isolate;min-height:650px;overflow:hidden;background:radial-gradient(circle at 69% 18%,#fff 0 15%,transparent 15.3%),linear-gradient(145deg,#fdf8ff,#fffefd)}
+.audit-auth-art::before{content:'';position:absolute;inset:0;background-image:radial-gradient(#dfceeb 1.2px,transparent 1.2px);background-size:22px 22px;opacity:.42;mask-image:linear-gradient(#000,transparent 85%)}
+.audit-auth-art::after{content:'';position:absolute;left:-13%;right:-13%;bottom:-165px;height:260px;background:#efe3fa;border-radius:50%}
+.audit-auth-illustration{position:absolute;z-index:1;left:50%;top:41%;width:min(87%,520px);height:auto;transform:translate(-50%,-50%);filter:drop-shadow(0 16px 8px #7860951b);animation:lens-bob 5.5s ease-in-out infinite}@keyframes lens-bob{50%{transform:translate(-50%,-53%) rotate(1deg)}}
+.audit-auth-copy{position:absolute;z-index:2;bottom:45px;left:8%;right:8%;text-align:center}.audit-auth-copy small{display:block;font-size:11px;letter-spacing:.17em;font-weight:800;color:#a27bb2}.audit-auth-copy h1{font-family:Georgia,serif;color:#312c62;font-size:clamp(32px,4vw,52px);letter-spacing:-.04em;line-height:1.08;margin:7px 0}.audit-auth-copy p{font-size:14px;color:#786d8d;margin:0}
+.audit-auth-stamp{position:absolute;z-index:2;top:26px;left:27px;padding:8px 12px;color:#a079b3;border:1px solid #e7d3ec;border-radius:99px;background:#fffdfedc;font-size:11px;letter-spacing:.12em;font-weight:800;transform:rotate(-4deg)}
+.audit-auth-note{position:absolute;z-index:3;top:7%;right:8%;max-width:190px;background:#fff9e6;border:1px solid #eadbb3;border-radius:14px;padding:13px 15px;color:#8e728a;font-size:12px;font-weight:700;box-shadow:0 9px 18px #765a9020;opacity:0;transform:translateY(8px) rotate(5deg);transition:opacity .25s,transform .25s;pointer-events:none}.audit-auth-note::after{content:'';position:absolute;bottom:-8px;left:18px;width:13px;height:13px;background:#fff9e6;border-left:1px solid #eadbb3;border-bottom:1px solid #eadbb3;transform:rotate(-30deg)}.audit-auth-art:hover .audit-auth-note,.auth.is-chatting .audit-auth-note{opacity:1;transform:translateY(0) rotate(0)}
+@media(max-width:900px){.page-head>div:first-child{max-width:65%}.audit-hero-art{width:38%;right:-2%}.audit-auth-stage{grid-template-columns:minmax(330px,.95fr) minmax(0,1fr)}.auth .auth-card{padding:38px 28px}}
+@media(max-width:700px){.mhead-in{padding:10px 14px;gap:7px}.mtitle{font-size:16px}.mtitle .logo{height:20px}.mright{width:auto;margin-left:auto;gap:5px}.mright .who{display:none}.mbtn{font-size:12px;padding:6px 9px}.page{padding:16px 12px 50px}.page-head{min-height:295px;padding:23px 23px 88px;border-radius:21px;align-items:flex-start}.page-head>div:first-child{max-width:100%}.page-head h1{font-size:28px}.page-head p{font-size:12.5px;max-width:88%}.audit-hero-art{width:172px;right:-13px;bottom:-10px}.audit-status{margin-top:15px;font-size:11px}.subtabs button{font-size:12.5px;padding:9px 12px}.card{padding:18px}.drop{min-height:122px;padding:17px 14px 15px 62px}.drop::before{left:14px;top:17px;width:36px;height:36px}.auth{padding:12px;align-items:flex-start}.audit-auth-stage{display:flex;flex-direction:column-reverse;min-height:0;width:min(540px,100%);margin:auto}.audit-auth-art{min-height:245px}.audit-auth-illustration{width:245px;left:73%;top:46%}.audit-auth-copy{text-align:left;left:23px;right:44%;bottom:22px}.audit-auth-copy h1{font-size:27px}.audit-auth-copy p{display:none}.audit-auth-copy small{font-size:9px;letter-spacing:.08em}.auth .auth-card{padding:29px 27px 39px}.audit-auth-stamp{display:none}.audit-auth-note{right:4%;top:8%;max-width:125px;font-size:10px;padding:9px}}
+@media(max-width:420px){.page-head{min-height:328px;padding:23px 19px 94px}.page-head h1{font-size:27px}.page-head p{max-width:100%;padding-right:18px}.audit-hero-art{width:144px;right:-21px;bottom:-5px}.audit-status{max-width:100%;font-size:10.5px}.mbrand{max-width:45%}.mtitle{font-size:14px;white-space:normal}.mtitle .logo{height:17px}.msub{display:none}.audit-auth-art{min-height:212px}.audit-auth-illustration{width:204px;left:74%;top:45%}.audit-auth-copy h1{font-size:21px}.audit-auth-copy small{font-size:8px}.auth .auth-card{padding:24px 21px 35px}.auth-card h2{font-size:25px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+</style>
 </head>
 <body>
+<svg class="audit-art-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="auditLens" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fffdfa"/><stop offset="1" stop-color="#f5e4fa"/></linearGradient>
+    <linearGradient id="auditPaper" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fffdf7"/><stop offset="1" stop-color="#ffebf2"/></linearGradient>
+    <linearGradient id="auditBow" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffaed3"/><stop offset="1" stop-color="#ee78ad"/></linearGradient>
+    <linearGradient id="auditScale" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#dbc7f1"/><stop offset="1" stop-color="#ab8ed0"/></linearGradient>
+  </defs>
+  <symbol id="audit-login-art" viewBox="0 0 600 520">
+    <ellipse cx="301" cy="468" rx="257" ry="18" fill="#ada3cd" opacity=".24"/>
+    <path d="M90 425c-21-91 29-280 158-328 141-52 278 45 282 190 2 66-24 114-57 138z" fill="#f4e7ff"/>
+    <path d="M72 90l5 12 13 4-13 4-5 12-4-12-13-4 13-4zM528 120l4 11 11 4-11 4-4 11-4-11-10-4 10-4zM516 374l4 9 10 3-10 4-4 9-4-9-10-4 10-3z" fill="#fff2b8" stroke="#7567a3" stroke-width="2"/>
+    <circle cx="72" cy="283" r="5" fill="#ecc0df"/><circle cx="475" cy="45" r="4" fill="#c7abe5"/>
+    <!-- Invoice held on a clipboard -->
+    <g transform="translate(58 128) rotate(-9 130 160)">
+      <rect x="8" y="16" width="225" height="319" rx="19" fill="#b5a1d1" stroke="#665f9b" stroke-width="3"/>
+      <rect x="26" y="31" width="189" height="286" rx="10" fill="url(#auditPaper)" stroke="#665f9b" stroke-width="2.8"/>
+      <rect x="78" y="6" width="84" height="39" rx="13" fill="#f8d2e5" stroke="#665f9b" stroke-width="3"/><path d="M105 18h31" stroke="#b686b9" stroke-width="4" stroke-linecap="round"/>
+      <text x="120" y="82" text-anchor="middle" fill="#6d5c99" font-size="19" font-weight="700" font-family="sans-serif">INVOICE</text>
+      <path d="M46 107h146m-146 19h113m-113 19h138" stroke="#e4d8e9" stroke-width="5" stroke-linecap="round"/>
+      <path d="M45 170h151m-151 39h151m-151 39h151" stroke="#e3d8e8" stroke-width="2"/>
+      <path d="M47 186h65m34 0h46m-145 39h51m51 0h44m-146 39h67m34 0h45" stroke="#c7b7d7" stroke-width="5" stroke-linecap="round"/>
+      <rect x="39" y="261" width="161" height="36" rx="8" fill="#ffdbeb" stroke="#efabcd" stroke-width="2"/>
+      <text x="59" y="286" fill="#c15e94" font-size="21" font-weight="700" font-family="sans-serif">฿ ?</text>
+      <path d="M146 279h32" stroke="#dc88b5" stroke-width="5" stroke-linecap="round"/>
+    </g>
+    <!-- Magnifying glass inspector -->
+    <g transform="translate(261 56) rotate(12 150 191)">
+      <path d="M175 240l62 163c8 21 39 18 45 0 2-6 1-12-1-18l-67-158z" fill="#a589cc" stroke="#655e98" stroke-width="4"/>
+      <path d="M185 253l-20-37 39-17 20 39z" fill="#fff2c5" stroke="#655e98" stroke-width="3"/>
+      <circle cx="144" cy="132" r="123" fill="#b8a1dc" stroke="#625b98" stroke-width="5"/>
+      <circle cx="144" cy="132" r="101" fill="url(#auditLens)" stroke="#fff8f2" stroke-width="5"/>
+      <path d="M81 54q-30 20-35 51" fill="none" stroke="#fff" stroke-width="11" stroke-linecap="round" opacity=".7"/>
+      <!-- Pink ribbon bow -->
+      <path d="M138 20c-20-30-51-26-53-6-2 21 23 30 53 20 28 13 55 6 55-15 0-20-32-29-55 1z" fill="url(#auditBow)" stroke="#655e98" stroke-width="3"/><circle cx="139" cy="27" r="9" fill="#fff1bd" stroke="#655e98" stroke-width="2.5"/>
+      <ellipse cx="99" cy="156" rx="14" ry="9" fill="#ffbed8"/><ellipse cx="189" cy="156" rx="14" ry="9" fill="#ffbed8"/>
+      <ellipse cx="114" cy="137" rx="8" ry="10" fill="#373765"/><ellipse cx="176" cy="137" rx="8" ry="10" fill="#373765"/><circle cx="116" cy="134" r="2.3" fill="#fff"/><circle cx="178" cy="134" r="2.3" fill="#fff"/>
+      <path d="M136 154q9 12 18 0" stroke="#df639c" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <path d="M45 167q-38 0-57 28m283-25q35-9 51 18" stroke="#655e98" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <path d="M119 249q-5 20-28 25m100-30q17 24 38 25" stroke="#655e98" stroke-width="4" fill="none" stroke-linecap="round"/>
+    </g>
+    <!-- Tiny delivery box -->
+    <g transform="translate(431 343) rotate(9 57 54)">
+      <path d="M7 22l55-20 55 20-55 21z" fill="#f7d1ac" stroke="#665e97" stroke-width="3"/><path d="M7 22v75l55 25V43z" fill="#efba9f" stroke="#665e97" stroke-width="3"/><path d="M117 22v75l-55 25V43z" fill="#ffdfb9" stroke="#665e97" stroke-width="3"/>
+      <path d="M35 12l55 22v27l-13-5V38L22 17" fill="#fff2d0" stroke="#665e97" stroke-width="2"/>
+      <path d="M78 86q5 7 10 0" fill="none" stroke="#9e6a86" stroke-width="2"/>
+    </g>
+  </symbol>
+  <symbol id="audit-hero-art" viewBox="0 0 700 480">
+    <ellipse cx="353" cy="454" rx="305" ry="17" fill="#aea3cc" opacity=".24"/>
+    <circle cx="359" cy="239" r="196" fill="#f9efff"/>
+    <path d="M91 80l5 12 12 4-12 4-5 13-5-13-12-4 12-4zM598 64l4 12 12 4-12 4-4 12-4-12-12-4 12-4zM625 336l4 10 11 4-11 4-4 10-4-10-10-4 10-4z" fill="#fff1ba" stroke="#7568a2" stroke-width="2"/>
+    <circle cx="70" cy="356" r="4" fill="#eeb1ce"/><circle cx="641" cy="222" r="4" fill="#c5a9e6"/>
+    <!-- Stand of the balance scale -->
+    <path d="M331 156h46v234h-46z" fill="url(#auditScale)" stroke="#625b98" stroke-width="4"/>
+    <path d="M315 383h80l18 42H296z" fill="#ad93cf" stroke="#625b98" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M270 421h168v22H270z" fill="#866eb6" stroke="#625b98" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M80 149q265-87 540 0" fill="none" stroke="#665f9b" stroke-width="14" stroke-linecap="round"/>
+    <path d="M80 149q265-87 540 0" fill="none" stroke="#ead8f5" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="354" cy="119" r="33" fill="#fff6db" stroke="#625b98" stroke-width="4"/><path d="M343 119l8 9 17-22" fill="none" stroke="#a17ac1" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Left pan and bill -->
+    <path d="M129 139l-48 177m48-177 48 177" fill="none" stroke="#9b82c1" stroke-width="4"/><path d="M58 314q70 38 141 0l-25 37H82z" fill="#d8bfeb" stroke="#625b98" stroke-width="3"/>
+    <g transform="translate(84 194) rotate(-7 48 60)">
+      <path d="M0 0h78l16 17v116H0z" fill="url(#auditPaper)" stroke="#625b98" stroke-width="3"/><path d="M78 0v18h16" fill="#e6d4ec" stroke="#625b98" stroke-width="2"/>
+      <path d="M14 35h61m-61 14h48m-48 14h59m-59 17h56" stroke="#d6c8e3" stroke-width="5" stroke-linecap="round"/>
+      <text x="47" y="119" text-anchor="middle" fill="#da6a9f" font-family="sans-serif" font-weight="700" font-size="20">฿  ฿</text>
+    </g>
+    <!-- Right pan and parcel -->
+    <path d="M578 139l-48 177m48-177 48 177" fill="none" stroke="#9b82c1" stroke-width="4"/><path d="M507 314q70 38 143 0l-25 37h-93z" fill="#d8bfeb" stroke="#625b98" stroke-width="3"/>
+    <g transform="translate(524 205)">
+      <path d="M1 27L52 2l54 25-54 25z" fill="#ffe2bd" stroke="#625b98" stroke-width="3"/><path d="M1 27v83l51 26V52z" fill="#efbba3" stroke="#625b98" stroke-width="3"/><path d="M106 27v83l-54 26V52z" fill="#ffd2ac" stroke="#625b98" stroke-width="3"/>
+      <path d="M26 15l54 25v31L66 64V45L13 22" fill="#fff5df" stroke="#625b98" stroke-width="2.5"/>
+      <rect x="65" y="84" width="30" height="23" rx="3" fill="#fff9f1" stroke="#a485ad" stroke-width="2"/>
+    </g>
+    <!-- Highlighted difference and a small hand lens -->
+    <path d="M254 252q90 55 197 0" fill="none" stroke="#efa5c9" stroke-width="4" stroke-linecap="round" stroke-dasharray="5 11"/>
+    <g transform="translate(374 194) rotate(19 60 85)">
+      <circle cx="55" cy="54" r="53" fill="#fffefa" stroke="#a88acb" stroke-width="11"/>
+      <path d="M87 91l53 69" stroke="#a88acb" stroke-width="19" stroke-linecap="round"/>
+      <path d="M34 54l14 14 27-30" fill="none" stroke="#e67caa" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+  </symbol>
+</svg>
 <main class="page">
   <div class="page-head">
     <div>
       <h1>ตรวจสอบค่าขนส่ง</h1>
       <p>เทียบบิล Flash / ไปรษณีย์ กับเรทตามสัญญา — หาพัสดุที่ถูกเก็บเงินเกิน และน้ำหนักที่ขนส่งชั่งเกิน</p>
+      <div class="audit-status" id="auditStatus" data-stage="waiting" aria-live="polite">รอไฟล์ JST เพื่อเริ่มตรวจสอบ</div>
     </div>
+    <span class="audit-fleck"></span><span class="audit-fleck"></span><span class="audit-fleck"></span><span class="audit-fleck"></span>
+    <svg class="audit-hero-art" viewBox="0 0 700 480" aria-hidden="true"><use href="#audit-hero-art"/></svg>
   </div>
 
   <div class="subtabs" id="csTabs">
@@ -1638,6 +1779,35 @@ loadLocalCache();
 renderFlashEdit();renderPostEdit();
 document.querySelectorAll('.modal-bg').forEach(function(m){m.addEventListener('click',function(e){if(e.target===m){m.classList.add('hide');if(m.id==='claimModal')claimTarget=null;}});});
 App.boot({page:'cs',subtitle:'ตรวจสอบค่าขนส่ง',onReady:function(){loadRates();loadClaims();}});
+</script>
+<script>
+/* Read-only decorative status derived from the existing file and result elements. */
+(function(){
+  const get=id=>document.getElementById(id);
+  const us=get('drop_us'),flash=get('drop_flash'),post=get('drop_post'),result=get('resultCard'),status=get('auditStatus');
+  function updateAuditStatus(){
+    const hasUs=us.classList.contains('has');
+    const hasBill=flash.classList.contains('has')||post.classList.contains('has');
+    const hasResult=!result.classList.contains('hide');
+    status.dataset.stage=hasResult?'done':hasUs?'ready':'waiting';
+    status.textContent=hasResult?'ตรวจสอบเสร็จแล้ว · ดูผลด้านล่างได้เลย ✦':
+      hasUs&&hasBill?'ไฟล์พร้อมแล้ว · กดตรวจสอบได้เลย ♡':
+      hasUs?'ได้ไฟล์ JST แล้ว · เพิ่มบิลขนส่งได้เลย ✿':
+      hasBill?'ได้บิลขนส่งแล้ว · รอไฟล์ JST นะ ♡':'รอไฟล์ JST เพื่อเริ่มตรวจสอบ';
+  }
+  const observer=new MutationObserver(updateAuditStatus);
+  [us,flash,post,result].forEach(el=>observer.observe(el,{attributes:true,attributeFilter:['class']}));
+  updateAuditStatus();
+  const auth=get('authScreen'),note=get('auditAuthNote');
+  if(auth&&note){
+    const lines={au_email:'ขออีเมลเพื่อเริ่มตรวจบิลนะ ✉',au_pass:'เก็บรหัสผ่านให้ปลอดภัยนะ ♡',su_email:'ยินดีที่ได้รู้จักนะ ✿',su_pass:'ตั้งรหัสให้ปลอดภัยด้วยนะ ✦',su_inv:'รหัสเชิญอยู่กับหัวหน้างานนะ ♡'};
+    Object.keys(lines).forEach(id=>{
+      const input=get(id);if(!input)return;
+      input.addEventListener('focus',()=>{note.textContent=lines[id];auth.classList.add('is-chatting');});
+      input.addEventListener('blur',()=>{note.textContent='มาส่องบิลให้ชัดกันนะ ♡';auth.classList.remove('is-chatting');});
+    });
+  }
+})();
 </script>
 </body>
 </html>
