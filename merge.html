@@ -627,6 +627,26 @@ input,select,textarea{border-color:#e0d5e6;border-radius:10px;background:#fff;co
 .hist-tbl th.act{background:#f6effa;z-index:2}
 .hist-tbl td.act .btn{display:block;width:100%;margin:2px 0;padding:5px 10px}
 .hist-tbl tr:hover td.act{background:#fcf5ff}
+
+/* history filter + pager */
+.hist-filter{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin:4px 0 10px}
+.hist-filter .hf{min-width:140px;flex:0 1 160px}
+.hist-filter .hf.grow{flex:1 1 220px}
+.hist-filter label{margin-bottom:4px;font-size:12.5px}
+.hist-filter input,.hist-filter select{height:38px;padding:0 10px;font-size:13.5px;box-sizing:border-box}
+.hist-filter #hfClear{height:38px}
+.hist-sum{font-size:13px;color:var(--muted);margin:0 2px 8px}
+.hist-sum b{color:#594877}
+.pager{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-top:12px}
+.pager:empty{display:none}
+.pg-info{font-size:13px;color:var(--muted)}
+.pg-btns{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+.pg{min-width:34px;height:34px;padding:0 10px;border:1px solid #e0d5e6;border-radius:10px;background:#fff;color:#594877;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer}
+.pg:hover:not([disabled]):not(.cur){background:#f6effa}
+.pg.cur{background:#8e73bc;border-color:#8e73bc;color:#fff}
+.pg[disabled]{opacity:.4;cursor:default}
+.pg-dot{color:var(--muted);padding:0 2px}
+@media(max-width:640px){.hist-filter .hf{flex:1 1 calc(50% - 10px);min-width:0}.hist-filter .hf.grow{flex-basis:100%}.hist-filter #hfClear{width:100%}.pager{justify-content:center}}
 </style>
 </head>
 <body>
@@ -855,7 +875,17 @@ input,select,textarea{border-color:#e0d5e6;border-radius:10px;background:#fff;co
       <div class="card-h"><div class="grow"><h2>🕘 ประวัติการรวมไฟล์</h2>
         <p class="desc">ทุกขนส่งรวมกัน · กด <b>เปิดดู</b> เพื่อดาวน์โหลดไฟล์ของรอบนั้นอีกครั้ง</p></div>
         <button class="btn ghost sm" id="btnReload">↻ โหลดใหม่</button></div>
+      <div class="hist-filter">
+        <div class="hf"><label for="hfCar">ขนส่ง</label><select id="hfCar"><option value="">ทั้งหมด</option><option value="flash">Flash Express</option><option value="post">ไปรษณีย์ไทย</option></select></div>
+        <div class="hf"><label for="hfFrom">บันทึกตั้งแต่</label><input type="date" id="hfFrom"></div>
+        <div class="hf"><label for="hfTo">ถึง</label><input type="date" id="hfTo"></div>
+        <div class="hf"><label for="hfMiss">ผลจับคู่</label><select id="hfMiss"><option value="">ทั้งหมด</option><option value="miss">มีรายการไม่พบ</option><option value="ok">จับคู่ครบ</option></select></div>
+        <div class="hf grow"><label for="hfQ">ค้นหา</label><input type="search" id="hfQ" placeholder="บันทึก · ชื่อไฟล์ · ผู้บันทึก"></div>
+        <button class="btn ghost sm" id="hfClear" type="button">ล้างตัวกรอง</button>
+      </div>
+      <div class="hist-sum" id="histSum"></div>
       <div id="histBox"></div>
+      <div class="pager" id="histPager"></div>
     </div>
     <div class="card hide" id="histViewCard">
       <div class="card-h"><div class="grow"><h2>📄 <span id="hvTitle"></span></h2><p class="desc" id="hvSub"></p></div>
@@ -1277,30 +1307,97 @@ async function saveHistory(){
     note('saveMsg',(rowMsg||pMsg.indexOf('ยังไม่ได้')>=0)?'warn':'ok','✅ บันทึกลงประวัติแล้ว'+rowMsg+pMsg);
   }catch(e){note('saveMsg','err','⚠️ บันทึกไม่สำเร็จ — '+esc(App.errText(e,'saveHistory')));}
 }
-async function renderHistory(){
+const HIST_PER_PAGE=30;
+let histAll=[],histPage=1;
+async function renderHistory(keepPage){
   const c=sbClient();
   if(!c){$('histBox').innerHTML='<div class="msg err">เชื่อมต่อเซิร์ฟเวอร์ไม่ได้</div>';return;}
-  $('histBox').innerHTML='<div class="msg info">⏳ กำลังโหลด...</div>';
+  if(!keepPage)histPage=1;
+  $('histBox').innerHTML='<div class="msg info">⏳ กำลังโหลด...</div>';$('histPager').innerHTML='';$('histSum').textContent='';
   try{
-    const {data,error}=await c.from('merge_history').select('id,created_at,carrier,note,summary').order('id',{ascending:false}).limit(200);
-    if(error)throw error;
-    if(!data||!data.length){$('histBox').innerHTML='<div class="empty"><span class="ico">🕘</span>ยังไม่มีประวัติ — ประมวลผลแล้วกด <b>💾 บันทึกรอบนี้</b></div>';return;}
-    let h='<div class="tbl-scroll hist-scroll"><table class="hist-tbl"><tr><th>วันที่/เวลา</th><th>ขนส่ง / บันทึก</th><th>ไฟล์ที่ใช้</th><th class="r">ทั้งหมด</th><th class="r">จับคู่ได้</th><th class="r">ไม่พบ</th><th>โดย</th><th class="r">ยอด COD</th><th class="r">ค่าขนส่ง</th><th class="act"></th></tr>';
-    data.forEach(function(r){
-      const s=r.summary||{};
-      const dt=String(fmtDate(r.created_at)).split(' ');
-      h+='<tr><td>'+esc(dt[0])+'<small>'+esc(dt.slice(1).join(' '))+'</small></td>'+
-         '<td class="wrap"><b>'+esc(r.carrier||'-')+'</b><small>'+esc(r.note||'')+'</small></td>'+
-         '<td class="wrap files"><span title="ไฟล์ขนส่ง">📦 '+esc(s.fileF||'-')+'</span><span title="ไฟล์ JST">🧾 '+esc(s.fileJ||'-')+'</span></td>'+
-         '<td class="r">'+((s.total||0).toLocaleString())+'</td><td class="r">'+((s.matched||0).toLocaleString())+'</td>'+
-         '<td class="r'+((s.missing||0)>0?' miss-n':'')+'">'+((s.missing||0).toLocaleString())+'</td><td>'+esc(String(s.by||'').split('@')[0])+'</td>'+
-         '<td class="r">'+money(s.cod||0)+'</td><td class="r">'+money(s.fee||0)+'</td>'+
-         '<td class="act"><button class="btn sm navy" onclick="openHistory('+r.id+')">เปิดดู</button>'+
-         '<button class="btn danger sm" onclick="delHistory('+r.id+')">ลบ</button></td></tr>';
-    });
-    $('histBox').innerHTML=h+'</table></div>';
+    const all=[];
+    for(let from=0,i=0;i<50;i++,from+=1000){   /* ดึงทีละ 1,000 จนครบ */
+      const {data,error}=await c.from('merge_history').select('id,created_at,carrier,note,summary').order('id',{ascending:false}).range(from,from+999);
+      if(error)throw error;
+      (data||[]).forEach(function(r){all.push(r);});
+      if(!data||data.length<1000)break;
+    }
+    histAll=all;
+    drawHistory();
   }catch(e){$('histBox').innerHTML='<div class="msg err">โหลดประวัติไม่สำเร็จ — '+esc(App.errText(e,'history'))+'</div>';}
 }
+function histCarKey(r){
+  const s=r.summary||{};
+  if(s.carrierKey)return s.carrierKey;
+  return /ไปรษณีย์|post/i.test(r.carrier||'')?'post':'flash';
+}
+function histDay(r){return String(fmtDate(r.created_at)).split(' ')[0];}
+function histFiltered(){
+  const car=$('hfCar').value,f=$('hfFrom').value,t=$('hfTo').value,miss=$('hfMiss').value,q=$('hfQ').value.trim().toLowerCase();
+  return histAll.filter(function(r){
+    const s=r.summary||{};
+    if(car&&histCarKey(r)!==car)return false;
+    const d=histDay(r);
+    if(f&&d<f)return false;
+    if(t&&d>t)return false;
+    if(miss==='miss'&&!((s.missing||0)>0))return false;
+    if(miss==='ok'&&(s.missing||0)>0)return false;
+    if(q){const hay=[r.note,r.carrier,s.fileF,s.fileJ,s.by].join(' ').toLowerCase();if(hay.indexOf(q)<0)return false;}
+    return true;
+  });
+}
+function drawHistory(){
+  if(!histAll.length){
+    $('histBox').innerHTML='<div class="empty"><span class="ico">🕘</span>ยังไม่มีประวัติ — ประมวลผลแล้วกด <b>💾 บันทึกรอบนี้</b></div>';
+    $('histPager').innerHTML='';$('histSum').textContent='';return;
+  }
+  const list=histFiltered();
+  const pages=Math.max(1,Math.ceil(list.length/HIST_PER_PAGE));
+  if(histPage>pages)histPage=pages;if(histPage<1)histPage=1;
+  const start=(histPage-1)*HIST_PER_PAGE,rows=list.slice(start,start+HIST_PER_PAGE);
+  let cod=0,fee=0,tot=0;list.forEach(function(r){const s=r.summary||{};cod+=s.cod||0;fee+=s.fee||0;tot+=s.total||0;});
+  const filtered=list.length!==histAll.length;
+  $('histSum').innerHTML=(filtered?'พบ <b>'+list.length.toLocaleString()+'</b> จาก '+histAll.length.toLocaleString()+' รอบ':'ทั้งหมด <b>'+histAll.length.toLocaleString()+'</b> รอบ')+
+    ' · พัสดุ '+tot.toLocaleString()+' ชิ้น · COD '+money(cod)+' · ค่าขนส่ง '+money(fee);
+  if(!list.length){
+    $('histBox').innerHTML='<div class="empty"><span class="ico">🔍</span>ไม่พบรอบที่ตรงกับตัวกรอง — ลองเปลี่ยนเงื่อนไข หรือกด <b>ล้างตัวกรอง</b></div>';
+    $('histPager').innerHTML='';return;
+  }
+  let h='<div class="tbl-scroll hist-scroll"><table class="hist-tbl"><tr><th>วันที่/เวลา</th><th>ขนส่ง / บันทึก</th><th>ไฟล์ที่ใช้</th><th class="r">ทั้งหมด</th><th class="r">จับคู่ได้</th><th class="r">ไม่พบ</th><th>โดย</th><th class="r">ยอด COD</th><th class="r">ค่าขนส่ง</th><th class="act"></th></tr>';
+  rows.forEach(function(r){
+    const s=r.summary||{};
+    const dt=String(fmtDate(r.created_at)).split(' ');
+    h+='<tr><td>'+esc(dt[0])+'<small>'+esc(dt.slice(1).join(' '))+'</small></td>'+
+       '<td class="wrap"><b>'+esc(r.carrier||'-')+'</b><small>'+esc(r.note||'')+'</small></td>'+
+       '<td class="wrap files"><span title="ไฟล์ขนส่ง">📦 '+esc(s.fileF||'-')+'</span><span title="ไฟล์ JST">🧾 '+esc(s.fileJ||'-')+'</span></td>'+
+       '<td class="r">'+((s.total||0).toLocaleString())+'</td><td class="r">'+((s.matched||0).toLocaleString())+'</td>'+
+       '<td class="r'+((s.missing||0)>0?' miss-n':'')+'">'+((s.missing||0).toLocaleString())+'</td><td>'+esc(String(s.by||'').split('@')[0])+'</td>'+
+       '<td class="r">'+money(s.cod||0)+'</td><td class="r">'+money(s.fee||0)+'</td>'+
+       '<td class="act"><button class="btn sm navy" onclick="openHistory('+r.id+')">เปิดดู</button>'+
+       '<button class="btn danger sm" onclick="delHistory('+r.id+')">ลบ</button></td></tr>';
+  });
+  $('histBox').innerHTML=h+'</table></div>';
+  /* pager */
+  let pg='<span class="pg-info">แสดง '+(start+1).toLocaleString()+'–'+(start+rows.length).toLocaleString()+' จาก '+list.length.toLocaleString()+' รอบ</span>';
+  if(pages>1){
+    const btn=function(n,label,dis,cur){return '<button type="button" class="pg'+(cur?' cur':'')+'" data-pg="'+n+'"'+(dis?' disabled':'')+'>'+label+'</button>';};
+    pg+='<span class="pg-btns">'+btn(1,'«',histPage===1)+btn(histPage-1,'‹',histPage===1);
+    let lo=Math.max(1,histPage-2),hi=Math.min(pages,lo+4);lo=Math.max(1,hi-4);
+    if(lo>1)pg+='<span class="pg-dot">…</span>';
+    for(let n=lo;n<=hi;n++)pg+=btn(n,n,false,n===histPage);
+    if(hi<pages)pg+='<span class="pg-dot">…</span>';
+    pg+=btn(histPage+1,'›',histPage===pages)+btn(pages,'»',histPage===pages)+'</span>';
+  }
+  $('histPager').innerHTML=pg;
+}
+$('histPager').addEventListener('click',function(e){
+  const b=e.target.closest('button[data-pg]');if(!b||b.disabled)return;
+  histPage=+b.dataset.pg;drawHistory();
+  const card=$('histBox').closest('.card');if(card)card.scrollIntoView({behavior:'smooth',block:'start'});
+});
+['hfCar','hfFrom','hfTo','hfMiss'].forEach(function(id){$(id).addEventListener('change',function(){histPage=1;drawHistory();});});
+(function(){let t;$('hfQ').addEventListener('input',function(){clearTimeout(t);t=setTimeout(function(){histPage=1;drawHistory();},200);});})();
+$('hfClear').addEventListener('click',function(){['hfCar','hfFrom','hfTo','hfMiss','hfQ'].forEach(function(id){$(id).value='';});histPage=1;drawHistory();});
 let hvState=null;
 async function openHistory(id){
   const c=sbClient();if(!c)return;
@@ -1343,7 +1440,7 @@ async function delHistory(id){
     try{await c.from('merge_history_rows').delete().eq('id',id);}catch(e2){}
     const {error}=await c.from('merge_history').delete().eq('id',id);if(error)throw error;
     if(hvState&&hvState.id===id){hvState=null;$('histViewCard').classList.add('hide');}
-    renderHistory();App.toast('ลบแล้ว','ok');
+    renderHistory(true);App.toast('ลบแล้ว','ok');
   }
   catch(e){App.toast('ลบไม่สำเร็จ — '+App.errText(e,'delHistory'),'err');}
 }
@@ -1722,7 +1819,7 @@ $('btnClear').onclick=function(){
   store[carrier]={F:null,J:null};results[carrier]=null;snap[carrier]=null;saveSnap();
   applyCarrier();
 };
-$('btnReload').onclick=renderHistory;
+$('btnReload').onclick=function(){renderHistory(true);};
 $('btnPeriod').onclick=loadPeriod;
 $('dropW').addEventListener('click',function(){$('filePickS').click();});
 $('dropW').addEventListener('dragover',function(e){e.preventDefault();$('dropW').classList.add('over');});
