@@ -520,15 +520,78 @@ details.more summary{cursor:pointer;color:var(--blue);font-size:13.5px;font-weig
   .cards2 .card h3{margin-top:0}
   @media(max-width:900px){.layout{grid-template-columns:1fr}.toc{position:static}}
 </style>
+<style>
+/* Guide · illustrated wayfinding atlas. */
+:root{--navy:#372f64;--navy-2:#38335e;--navy-3:#574d86;--brand:#e566a3;--brand-2:#d74e95;--blue:#8b70bb;--gold:#b78f51;--ok:#438568;--warn:#aa7b42;--err:#c35479;--violet:#8869b5;--slate:#718099;--ink:#35314d;--muted:#756e87;--faint:#a49bb0;--line:#e9dfed;--line-2:#f6f0f8;--bg:#fcf9fe;--card:#fff;--ok-bg:#eaf8f1;--warn-bg:#fff7e9;--err-bg:#fff0f5;--info-bg:#f3edfb;--violet-bg:#f2eafa;--r-lg:20px;--sh:0 8px 25px #6050790e;--sh-lg:0 24px 60px #35295938}
+html{scroll-behavior:smooth}body{min-height:100vh;overflow-x:hidden;background:radial-gradient(ellipse at 0 10%,#eee5f9 0,transparent 28%),radial-gradient(ellipse at 96% 55%,#fff0f6 0,transparent 36%),var(--bg);color:var(--ink)}body::before{content:'';position:fixed;inset:0;z-index:-1;background-image:radial-gradient(#dbcce8 1px,transparent 1px);background-size:28px 28px;opacity:.22;pointer-events:none}
+button,input{font-family:inherit}button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #b18bd0;outline-offset:3px}
+.mhead{background:#f1e4fa;color:#473c72;border-bottom:1px solid #dfd0eb;box-shadow:0 5px 18px #473a6110}.mhead-in{max-width:1280px;min-height:76px;padding:10px 24px}.mtitle{font-size:18px;color:#3d356b}.mtitle .logo{height:27px;box-sizing:content-box;background:#38335d;padding:5px 9px;border-radius:8px}.msub{color:#9477a9;font-size:11px;font-weight:700;letter-spacing:.07em}.mright .who{color:#6c5d81;background:#fff;border:1px solid #e7d8ed;border-radius:99px;padding:7px 12px}.mbtn{color:#675381;background:#fffcff;border-color:#e2d1eb;border-radius:99px;padding:8px 15px;transition:transform .2s,background .2s}.mbtn:hover{background:#f8f0fb;border-color:#cdb0df;transform:translateY(-2px)}
+.guide-progress{position:fixed;top:0;left:0;width:0;height:4px;z-index:100;background:linear-gradient(90deg,#b693d3,#e570ad);box-shadow:0 1px 7px #ce75aa77;transition:width .12s linear;pointer-events:none}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.toc [hidden]{display:none!important}
+.page{max-width:1280px;padding:27px 24px 60px}.page-head{position:relative;isolation:isolate;display:flex;align-items:center;min-height:360px;overflow:hidden;padding:39px clamp(25px,4.7vw,57px);margin-bottom:24px;border:1px solid #e4d3ea;border-radius:28px;background:radial-gradient(circle at 85% 27%,#fffefa 0 13%,transparent 13.2%),linear-gradient(112deg,#f2e7fc 0,#fff9fc 61%,#f7e5f3 100%);box-shadow:0 19px 43px #70578919}
+.page-head::before{content:'';position:absolute;inset:0;z-index:-1;opacity:.46;pointer-events:none;background-image:repeating-linear-gradient(0deg,transparent 0 34px,#dfcde7 35px),repeating-linear-gradient(90deg,transparent 0 34px,#dfcde7 35px);mask-image:linear-gradient(90deg,transparent 27%,#000)}
+.page-head>div:first-child{position:relative;z-index:2;max-width:59%}.guide-eyebrow{display:block;margin-bottom:10px;color:#a575a9;letter-spacing:.16em;font-size:11px;font-weight:800}.guide-eyebrow::before{content:'✦  ';color:#e881b2}.page-head h1{font-size:clamp(31px,3.5vw,46px);line-height:1.17;letter-spacing:-.04em;color:#3a3169}.page-head p{max-width:580px;margin:12px 0 0;font-size:14px;line-height:1.7;color:#746b83}
+.guide-quick{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}.guide-quick a{display:inline-flex;align-items:center;gap:6px;padding:8px 13px;background:#fffdfdeb;border:1px solid #e4d0ec;border-radius:99px;color:#765a96;text-decoration:none;font-weight:700;font-size:12px;box-shadow:0 5px 13px #755a8910;transition:transform .2s,background .2s,border-color .2s}.guide-quick a:hover{transform:translateY(-3px);background:#fff;border-color:#c89edc}.guide-hero-art{position:absolute;z-index:1;right:-1%;bottom:-13px;width:min(45%,540px);height:auto;pointer-events:none;filter:drop-shadow(0 18px 10px #69557e19);animation:guide-map-float 6.3s ease-in-out infinite}@keyframes guide-map-float{50%{transform:translateY(-8px) rotate(.6deg)}}
+.layout{grid-template-columns:250px minmax(0,1fr);gap:24px;align-items:start}.toc{position:sticky;top:93px;max-height:calc(100vh - 112px);overflow:auto;scrollbar-width:thin;scrollbar-color:#dac5e9 transparent;border:1px solid #e7d9eb;border-radius:20px;padding:13px 12px 17px;background:linear-gradient(155deg,#fff,#fffafd);box-shadow:0 10px 26px #65517d12}.toc::before{content:'✧  สารบัญของฉัน';display:block;margin:5px 8px 11px;color:#493d72;font-size:15px;font-weight:800}.guide-toc-search{width:100%;height:40px;padding:8px 12px;margin-bottom:11px;border:1px solid #e7daed;border-radius:10px;background:#faf6fd;color:#4a3e68;font-size:13px}.guide-toc-search:focus{border-color:#b58dd0;box-shadow:0 0 0 3px #edddf5;outline:0}.guide-toc-empty{display:none;margin:10px 8px;color:#957e9e;font-size:12px}.guide-toc-empty.show{display:block}.toc b{margin:13px 9px 5px;color:#af82b0;font-size:10.5px;letter-spacing:.11em}.toc a{position:relative;margin:2px 0;padding:8px 11px;border-radius:10px;color:#615574;font-size:13px;line-height:1.4;transition:background .16s,transform .16s,color .16s}.toc a:hover{background:#f8effb;color:#563e7b;transform:translateX(2px)}.toc a.sub{padding-left:22px;font-size:12px;color:#81748e}.toc a.active{background:#f2e7f9;color:#68458f;font-weight:800}.toc a.active::before{content:'';position:absolute;left:0;top:17%;bottom:17%;width:3px;background:#d878ae;border-radius:3px}.toc a.sub.active{color:#68458f}
+.layout>div:last-child{min-width:0}section{position:relative;scroll-margin-top:96px;margin:0 0 20px;padding:25px 28px 29px;border:1px solid #ebe0ef;border-radius:21px;background:linear-gradient(155deg,#fff,#fff 80%,#fffcff);box-shadow:0 9px 25px #64507c0c}section:target{border-color:#d8b5e5;box-shadow:0 10px 30px #9d75b31e}section h2{margin:0 0 12px;gap:12px;color:#41366c;font-size:21px;letter-spacing:-.015em}section h2 .n{width:35px;height:35px;border-radius:12px;background:linear-gradient(140deg,#aa8acb,#8b70b7);box-shadow:0 5px 12px #926db632}section h3{color:#514274;margin:23px 0 10px}section h3:first-child{margin-top:0}section .lead{color:#746b82;margin-bottom:15px}
+ol.steps{margin:16px 0 4px}ol.steps>li{padding:15px 17px 15px 62px;margin-bottom:9px;border:1px solid #ecdfed;border-radius:14px;background:linear-gradient(110deg,#fffafd,#fff);box-shadow:0 3px 8px #71528608;transition:transform .19s,box-shadow .19s}ol.steps>li:hover{transform:translateX(3px);box-shadow:0 8px 16px #765c8514}ol.steps>li::before{left:17px;top:15px;width:30px;height:30px;border-radius:10px;background:#ecdaef;color:#7a55a1;font-size:14px}.kbd{background:#f4eaf8;border-color:#e5d6ed;color:#6b4e88;border-radius:7px;padding:2px 7px;font-weight:700}
+.tbl-plain{overflow:auto;border:1px solid #eaddec;border-radius:14px}.tbl-plain table{min-width:610px;border:0;border-radius:0}table{color:#534a63}th{padding:12px 11px;background:#f6eef9;border-color:#e8ddec;color:#594779}td{padding:11px;border-color:#f1eaf1}tr:nth-child(even) td{background:#fefafe}tr:hover td{background:#faf4fc!important}.cards2{gap:12px}.cards2 .card{border:1px solid #e9dbea;border-radius:16px;padding:20px;background:linear-gradient(145deg,#fff,#fffafd);box-shadow:0 5px 16px #71548a0c;transition:transform .2s,box-shadow .2s}.cards2 .card:hover{transform:translateY(-3px);box-shadow:0 12px 23px #71548a1b}.cards2 .card h3{color:#493972;font-size:15px;margin:0 0 10px}.cards2 .card p{margin:6px 0;color:#60576d}.cards2 .card p:last-child{margin-bottom:0}
+.msg.info,.note{background:#f5effb;border-color:#e4d6ee;color:#645181}.msg.ok{background:#ecf8f1;border-color:#cbe6d4;color:#357254}.msg.warn{background:#fff7e9;border-color:#eddcbb;color:#856024}.msg.err{background:#fff0f5;border-color:#f0c9d9;color:#a04267}.badge.ok{background:#eaf7ef;color:#428469}.badge.warn{background:#fff3df;color:#a27640}.badge.err{background:#fff0f5;color:#b95078}.badge.info,.badge.violet{background:#f1e8fa;color:#7c5ca3}.foot{padding-top:15px;color:#ab9db5}
+.guide-top{position:fixed;z-index:55;right:23px;bottom:23px;display:grid;place-items:center;width:44px;height:44px;border:1px solid #e5d2e9;border-radius:15px;background:#fff9ff;color:#765796;font-size:21px;cursor:pointer;box-shadow:0 9px 25px #493b6228;opacity:0;transform:translateY(9px);pointer-events:none;transition:opacity .2s,transform .2s}.guide-top.visible{opacity:1;transform:translateY(0);pointer-events:auto}.guide-top:hover{background:#f3e8fb}
+@media(max-width:930px){.layout{grid-template-columns:1fr}.toc{position:relative;top:0;max-height:220px}.page-head>div:first-child{max-width:64%}.guide-hero-art{width:42%}}
+@media(max-width:700px){.page{padding:16px 12px 50px}.page-head{display:block;min-height:0;padding:27px 22px 5px}.page-head>div:first-child{max-width:none}.page-head h1{font-size:31px}.guide-hero-art{position:relative;display:block;right:auto;bottom:auto;width:min(100%,320px);margin:-4px auto -12px}.guide-quick{margin-top:18px}.layout{gap:17px}section{padding:22px 18px;margin-bottom:15px}section h2{font-size:19px}ol.steps>li{padding-left:54px}.cards2{grid-template-columns:1fr}.guide-top{right:14px;bottom:14px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.guide-hero-art{animation:none}.guide-quick a,.toc a,ol.steps>li,.cards2 .card,.guide-top{transition:none}}
+</style>
 </head>
 <body>
+<div class="guide-progress" id="guideProgress" aria-hidden="true"></div>
 <main class="page">
   <div class="page-head">
-    <div><h1>คู่มือการใช้งาน</h1><p>ระบบงานฝ่าย CS — รวมไฟล์ขนส่ง · ตรวจค่าขนส่ง · ติดตามเคลม · รายงานผู้บริหาร</p></div>
+    <div>
+      <span class="guide-eyebrow">MASARU CS HUB · YOUR GUIDE</span>
+      <h1>คู่มือการใช้งาน</h1>
+      <p>ระบบงานฝ่าย CS — รวมไฟล์ขนส่ง · ตรวจค่าขนส่ง · ติดตามเคลม · รายงานผู้บริหาร</p>
+      <div class="guide-quick" aria-label="ทางลัดหัวข้อ">
+        <a href="#overview">✦ เริ่มต้นที่นี่</a><a href="#merge">↗ รวมไฟล์</a><a href="#cs">✧ ตรวจค่าขนส่ง</a><a href="#faq">? คำถามที่พบบ่อย</a>
+      </div>
+    </div>
+    <svg class="guide-hero-art" viewBox="0 0 680 450" role="img" aria-label="ภาพแผนที่เส้นทางการเรียนรู้ของคู่มือ">
+      <defs>
+        <linearGradient id="guide-paper" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fffefa"/><stop offset="1" stop-color="#fff7f7"/></linearGradient>
+        <linearGradient id="guide-path" x1="0" y1="1" x2="1" y2="0"><stop stop-color="#e8a8ce"/><stop offset="1" stop-color="#a88bcf"/></linearGradient>
+        <linearGradient id="guide-hill" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#efe2fa"/><stop offset="1" stop-color="#d7c2ec"/></linearGradient>
+      </defs>
+      <ellipse cx="348" cy="429" rx="296" ry="16" fill="#a990bd" opacity=".2"/>
+      <g transform="translate(57 28) rotate(-5 283 197)">
+        <path d="M16 58Q18 40 36 38L172 22l112 24 116-23 124 15q19 2 22 21l18 302q1 19-18 22l-149 12-111-25-119 24L35 376Q16 374 15 355z" fill="#e4d2ec" stroke="#77639e" stroke-width="5"/>
+        <path d="M28 61q1-12 14-14l130-13 112 24 116-23 120 14q12 2 15 15l17 289q1 12-13 15l-143 14-111-24-118 23-126-17q-12-1-13-14z" fill="url(#guide-paper)"/>
+        <path d="M172 34l-5 344M284 58l1 302M400 35l-4 347" stroke="#e1d5e6" stroke-width="4" stroke-dasharray="7 6"/>
+        <path d="M31 310q72-75 139-16t120-4q87-71 156-14 47 37 104-5v83l-149 13-113-23-120 23L32 352z" fill="url(#guide-hill)" opacity=".85"/>
+        <path d="M29 170q61-32 103-9t70-2q58-40 92-16 41 30 82 3 66-46 165 16v93q-75 41-136-5-56-43-119 15-53 48-103 16-61-39-154 22z" fill="#fbebf5" opacity=".84"/>
+        <path d="M89 292C92 244 175 276 179 218c3-50 87-29 111-81 27-57 95 16 132-46 21-34 56-33 87-17" fill="none" stroke="#fff" stroke-width="22" stroke-linecap="round"/>
+        <path d="M89 292C92 244 175 276 179 218c3-50 87-29 111-81 27-57 95 16 132-46 21-34 56-33 87-17" fill="none" stroke="url(#guide-path)" stroke-width="8" stroke-linecap="round" stroke-dasharray="2 16"/>
+        <g font-family="sans-serif" font-size="19" font-weight="800" text-anchor="middle" dominant-baseline="central">
+          <circle cx="89" cy="292" r="19" fill="#fff2d1" stroke="#8169a7" stroke-width="4"/><text x="89" y="291" fill="#8066a7">1</text>
+          <circle cx="180" cy="217" r="19" fill="#fff8ff" stroke="#8169a7" stroke-width="4"/><text x="180" y="216" fill="#8066a7">2</text>
+          <circle cx="290" cy="137" r="19" fill="#ffebf5" stroke="#8169a7" stroke-width="4"/><text x="290" y="136" fill="#8066a7">3</text>
+          <circle cx="422" cy="91" r="19" fill="#f1e7fc" stroke="#8169a7" stroke-width="4"/><text x="422" y="90" fill="#8066a7">4</text>
+        </g>
+        <g transform="translate(503 29)"><path d="M0 21a29 29 0 1 1 58 0c0 25-29 48-29 48S0 46 0 21z" fill="#e87eaf" stroke="#7a64a4" stroke-width="4"/><circle cx="29" cy="21" r="11" fill="#fff8df"/></g>
+        <g fill="#a485c1" opacity=".84"><path d="M59 103q23-26 48 0-26 12-48 0zm319 209q24-31 50-7-21 21-50 7z"/><circle cx="74" cy="89" r="6"/><circle cx="384" cy="294" r="6"/></g>
+        <g fill="#eab6cf"><circle cx="240" cy="282" r="7"/><circle cx="445" cy="202" r="7"/><circle cx="471" cy="314" r="5"/></g>
+        <g fill="#fff4c6" stroke="#936fba" stroke-width="2"><path d="M72 214l5 11 12 5-12 4-5 12-4-12-13-4 13-5z"/><path d="M358 198l5 11 11 5-11 4-5 12-5-12-11-4 11-5z"/><path d="M481 145l4 10 10 4-10 4-4 11-4-11-10-4 10-4z"/></g>
+      </g>
+      <g transform="translate(21 353) rotate(7 80 50)"><rect x="0" y="0" width="160" height="75" rx="18" fill="#fff9fc" stroke="#77639e" stroke-width="4"/><path d="M28 28h102M28 46h67" stroke="#d8c2e7" stroke-width="8" stroke-linecap="round"/><path d="M138 35l9 10-9 10" stroke="#e476ad" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>
+      <g fill="#fff0c4" stroke="#9875b9" stroke-width="2"><path d="M93 46l5 12 13 5-13 5-5 13-5-13-13-5 13-5z"/><path d="M622 82l5 12 13 5-13 5-5 13-5-13-13-5 13-5z"/></g>
+    </svg>
   </div>
 
   <div class="layout">
-    <nav class="toc">
+    <nav class="toc" aria-label="สารบัญคู่มือ">
+      <label for="guideSearch" class="sr-only">ค้นหาหัวข้อคู่มือ</label>
+      <input class="guide-toc-search" id="guideSearch" type="search" placeholder="⌕  ค้นหาหัวข้อ..." autocomplete="off">
+      <div class="guide-toc-empty" id="guideNoMatch" role="status">ไม่พบหัวข้อที่ตรงกับคำค้น</div>
       <b>เริ่มต้น</b>
       <a href="#overview">ภาพรวมระบบ</a>
       <a href="#login">เข้าสู่ระบบ</a>
@@ -573,9 +636,9 @@ details.more summary{cursor:pointer;color:var(--blue);font-size:13.5px;font-weig
 <!-- ═══════════ MERGE ═══════════ -->
 <section id="merge">
   <h2><span class="n">3</span>รวมไฟล์ขนส่ง → ไฟล์อัปโหลด admin</h2>
-  <p class="lead">เลือกขนส่งที่มุมขวาบนของหน้าก่อนเสมอ — <b>📦 Flash Express</b> หรือ <b>📮 ไปรษณีย์ไทย</b> (สีหน้าจอจะเปลี่ยนตามขนส่ง) แต่ละขนส่งแยกไฟล์และผลลัพธ์กัน สลับไปมาได้ ของที่อัปไว้ไม่หาย</p>
+  <p class="lead">เลือกขนส่งที่ด้านบนของหน้าก่อนเสมอ — <b>📦 Flash Express</b> หรือ <b>📮 ไปรษณีย์ไทย</b> (สีหน้าจอจะเปลี่ยนตามขนส่ง) แต่ละขนส่งแยกไฟล์และผลลัพธ์กัน สลับไปมาได้ ของที่อัปไว้ไม่หาย</p>
   <ol class="steps">
-    <li><b>เลือกขนส่ง</b> ที่ปุ่มมุมขวาบน</li>
+    <li><b>เลือกขนส่ง</b> ที่ปุ่มด้านบนของหน้า</li>
     <li><b>ใส่ไฟล์ 2 ไฟล์</b> — ลากมาวางหรือคลิกเลือก: ช่องซ้าย = ไฟล์จากขนส่ง · ช่องขวา = ไฟล์จาก JST (ใส่ผิดช่อง ระบบจะเตือน)</li>
     <li>กด <span class="kbd">▶ ประมวลผล</span> แล้วดูตัวเลขสรุป (ตารางด้านล่าง)</li>
     <li>กด <span class="kbd">⬇ ดาวน์โหลด Excel</span> → นำไฟล์ไปอัปเข้าระบบ admin ทีละขนส่ง</li>
@@ -595,13 +658,12 @@ details.more summary{cursor:pointer;color:var(--blue);font-size:13.5px;font-weig
 <section id="status">
   <h3 style="font-size:18px">🔄 อัปเดตสถานะปลายทาง (เซ็นรับ / ตีกลับ)</h3>
   <p>ทำที่แท็บ <b>อัปเดตสถานะ</b> — ใช้ติดสถานะให้พัสดุที่ <b>บันทึกรอบไว้แล้ว</b> เพื่อให้รายงานผู้บริหารนับเซ็นรับ / ตีกลับได้ครบ</p>
-  <div class="cards2">
-    <div class="card"><h3>ทางเลือก A · Google Sheet <span class="badge ok">แนะนำ</span></h3>
-      <p><span class="kbd">📥 ดึงข้อมูลเข้ารายงาน</span> — ดึงครบทั้งวันที่ฝาก ยอด COD ค่าขนส่ง และสถานะ เข้าระบบทีเดียว (ไม่ต้องรวมไฟล์ก่อน)</p>
-      <p><span class="kbd">🔄 ดึงเฉพาะสถานะ</span> — ดึงมาให้ตรวจก่อน แล้วค่อยกด <span class="kbd">⬆ อัปเดตสถานะ</span></p></div>
-    <div class="card"><h3>ทางเลือก B · อัปไฟล์สถานะ</h3>
-      <p>ใส่ไฟล์ที่มีเลขพัสดุ + สถานะจากขนส่ง ระบบจะหาคอลัมน์ให้เอง แล้วกด <span class="kbd">🔍 ตรวจก่อนอัปเดต</span> → ดูว่าแปลสถานะถูก → <span class="kbd">⬆ อัปเดตสถานะ</span></p></div>
-  </div>
+  <ol class="steps">
+    <li>เลือกขนส่ง (Flash / ไปรษณีย์) ที่ด้านบนของหน้า แล้วไปที่แท็บ <b>อัปเดตสถานะ</b></li>
+    <li>ลากไฟล์สถานะจากขนส่ง (ไฟล์ที่มีเลขพัสดุ + สถานะ) มาวาง — ระบบหาคอลัมน์ให้เอง</li>
+    <li>กด <span class="kbd">🔍 ตรวจก่อนอัปเดต</span> ดูว่าระบบแปลสถานะถูกต้อง</li>
+    <li>กด <span class="kbd">⬆ อัปเดตสถานะ</span></li>
+  </ol>
   <div class="msg warn" style="margin-top:12px">ถ้าในตาราง "ตรวจก่อนอัปเดต" ระบบแปลข้อความสถานะผิด <b>อย่าเพิ่งกดอัปเดต</b> — แจ้งผู้ดูแลระบบพร้อมข้อความสถานะนั้น</div>
 </section>
 
@@ -611,7 +673,7 @@ details.more summary{cursor:pointer;color:var(--blue);font-size:13.5px;font-weig
     <li><b>สรุปรอบล่าสุด</b> — ยอดส่ง ยอด COD ค่าขนส่ง แยกตามขนส่ง ดูคอลัมน์ <b>สถานะ</b>: <span class="badge ok">รอบนี้</span> = เพิ่งประมวลผล · <span class="badge warn">รอบเก่า</span> = ยอดที่จำไว้จากรอบก่อน</li>
     <li>ถ้าขึ้นแถบแดง <b>"ยอดรวมนี้มาจากคนละรอบ"</b> ให้กด <span class="kbd">🗑 ล้างยอดที่จำไว้</span> แล้วประมวลผลทั้งสองขนส่งของวันเดียวกันใหม่</li>
     <li><b>ยอดสะสมตามช่วงวันที่</b> — นับเฉพาะรอบที่กดบันทึกไว้ ติดนิสัยกดบันทึกทุกครั้งหลังประมวลผล</li>
-    <li><b>ประวัติ</b> — กด <span class="kbd">เปิดดู</span> เพื่อดาวน์โหลดไฟล์ของรอบเก่าอีกครั้ง</li>
+    <li><b>ประวัติ</b> — แสดงหน้าละ 30 รอบ กรองได้ตามขนส่ง ช่วงวันที่บันทึก ผลจับคู่ (มีรายการไม่พบ / จับคู่ครบ) หรือพิมพ์ค้นหาชื่อบันทึก · ชื่อไฟล์ · ผู้บันทึก — กด <span class="kbd">เปิดดู</span> เพื่อดาวน์โหลดไฟล์ของรอบเก่าอีกครั้ง</li>
   </ul>
 </section>
 
@@ -677,7 +739,7 @@ details.more summary{cursor:pointer;color:var(--blue);font-size:13.5px;font-weig
 <!-- ═══════════ EXEC ═══════════ -->
 <section id="exec">
   <h2><span class="n">5</span>รายงานผู้บริหาร</h2>
-  <p>เลือกเดือนที่มุมขวาบน รายงานจะโหลดอัตโนมัติ — ภาพรวมยอดส่ง ค่าขนส่ง ผลปลายทาง ผลเคลม แยกตามขนส่ง และแนวโน้มย้อนหลัง กด <span class="kbd">⬇ ดาวน์โหลด Excel</span> เพื่อส่งต่อ</p>
+  <p>เลือกเดือนที่ด้านบนของหน้า รายงานจะโหลดอัตโนมัติ — ภาพรวมยอดส่ง ค่าขนส่ง ผลปลายทาง ผลเคลม แยกตามขนส่ง และแนวโน้มย้อนหลัง กด <span class="kbd">⬇ ดาวน์โหลด Excel</span> เพื่อส่งต่อ</p>
   <div class="msg warn">ตัวเลขในรายงานมาจากรอบที่ <b>บันทึกไว้</b> ในรวมไฟล์ขนส่ง และสถานะที่ <b>อัปเดตแล้ว</b> — ถ้าพัสดุ "ยังไม่ถึงปลายทาง" เยอะ ให้ไปอัปเดตสถานะก่อน</div>
 </section>
 
@@ -704,6 +766,49 @@ details.more summary{cursor:pointer;color:var(--blue);font-size:13.5px;font-weig
   </div>
   <div class="foot">จัดทำโดยฝ่าย IA — MASARU Group · เอกสารภายใน (ความลับ)</div>
 </main>
+<button class="guide-top" id="guideTop" type="button" aria-label="กลับไปด้านบน">↑</button>
 <script>App.boot({page:'guide',auth:false});</script>
+<script>
+/* Reading aids only: the guide text and all original application actions are untouched. */
+(function(){
+  var nav=document.querySelector('.toc'), links=Array.from(nav.querySelectorAll('a[href^="#"]'));
+  var sections=links.map(function(a){return document.getElementById(a.getAttribute('href').slice(1));});
+  var search=document.getElementById('guideSearch'), empty=document.getElementById('guideNoMatch');
+  var progress=document.getElementById('guideProgress'), top=document.getElementById('guideTop');
+  search.addEventListener('input',function(){
+    var q=search.value.trim().toLocaleLowerCase('th');
+    links.forEach(function(a){a.hidden=!!q&&!a.textContent.toLocaleLowerCase('th').includes(q);});
+    var heading=null,group=[];
+    Array.from(nav.children).forEach(function(el){
+      if(el.tagName==='B'){
+        if(heading)heading.hidden=!!q&&!group.some(function(a){return !a.hidden;});
+        heading=el;group=[];
+      }else if(el.tagName==='A')group.push(el);
+    });
+    if(heading)heading.hidden=!!q&&!group.some(function(a){return !a.hidden;});
+    empty.classList.toggle('show',!links.some(function(a){return !a.hidden;}));
+  });
+  search.addEventListener('keydown',function(e){
+    if(e.key==='Enter'){
+      var first=links.find(function(a){return !a.hidden;});
+      if(first){first.click();search.blur();}
+    }
+  });
+  top.addEventListener('click',function(){window.scrollTo({top:0,behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});});
+  var ticking=false;
+  function update(){
+    ticking=false;
+    var max=document.documentElement.scrollHeight-innerHeight;
+    progress.style.width=(max>0?Math.min(100,Math.max(0,scrollY/max*100)):100)+'%';
+    top.classList.toggle('visible',scrollY>500);
+    var active=-1;
+    sections.forEach(function(section,i){if(section&&section.getBoundingClientRect().top<=150)active=i;});
+    links.forEach(function(a,i){a.classList.toggle('active',i===active);if(i===active)a.setAttribute('aria-current','location');else a.removeAttribute('aria-current');});
+  }
+  addEventListener('scroll',function(){if(!ticking){ticking=true;requestAnimationFrame(update);}},{passive:true});
+  addEventListener('resize',update);
+  update();
+})();
+</script>
 </body>
 </html>
