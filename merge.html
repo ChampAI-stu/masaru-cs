@@ -261,6 +261,7 @@
         <button class="btn gold" id="btnGsFull">📥 ดึงเข้ารายงานผู้บริหาร (ครบทุกช่อง)</button>
         <button class="btn" id="btnGsFetch">🔄 ดึงจาก Google Sheet</button>
       </div>
+      <div id="gsProg" class="hide" style="margin-top:12px"></div>
       <div style="font-size:11.5px;color:var(--muted);margin-top:6px">
         <b>📥 ดึงเข้ารายงานผู้บริหาร</b> — ดึงครบทั้งวันที่รับฝาก ยอด COD ค่าขนส่ง และสถานะ เข้าระบบทีเดียว ไม่ต้องรวมไฟล์ก่อน<br>
         <b>🔄 ดึงจาก Google Sheet</b> — ดึงเฉพาะสถานะ แล้วให้ตรวจก่อนอัปเดตเหมือนลากไฟล์
@@ -1020,6 +1021,23 @@ function jsonp(url,timeout){
     document.body.appendChild(sc);
   });
 }
+/* ---------- แถบความคืบหน้า ---------- */
+function gsProg(done,total,label,sub){
+  const el=$('gsProg');if(!el)return;
+  el.classList.remove('hide');
+  const p=total?Math.min(100,Math.round(done/total*100)):0;
+  el.innerHTML=
+    '<div style="display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;margin-bottom:5px">'+
+      '<b style="color:var(--hd1)">'+esc(label||'กำลังทำงาน')+'</b>'+
+      '<span style="color:var(--muted)">'+done.toLocaleString()+' / '+total.toLocaleString()+' · '+p+'%</span>'+
+    '</div>'+
+    '<div style="height:12px;border-radius:7px;background:#eef1f6;overflow:hidden">'+
+      '<i style="display:block;height:100%;width:'+p+'%;background:linear-gradient(90deg,var(--accent),var(--hd1));transition:width .25s"></i>'+
+    '</div>'+
+    (sub?'<div style="font-size:11.5px;color:var(--muted);margin-top:5px">'+esc(sub)+'</div>':'');
+}
+function gsProgDone(){const el=$('gsProg');if(el){el.classList.add('hide');el.innerHTML='';}}
+
 /* ---------- ดึงจาก Google Sheet แบบแบ่งก้อน ---------- */
 function gsBase(){
   const url=(C().gsUrl||GS.url), tok=(C().gsToken||GS.token);
@@ -1062,8 +1080,8 @@ async function gsFetch(){
   const btn=$('btnGsFetch');btn.disabled=true;const t0=btn.textContent;
   try{
     const r=await gsAll('status',function(got,total,name){
-      btn.textContent='ดึง '+got.toLocaleString()+'/'+total.toLocaleString()+'...';
-      note('stMsg','info','⏳ กำลังดึงสถานะ '+got.toLocaleString()+' / '+total.toLocaleString()+' แถว<br><span style="font-size:12px">'+esc(name)+'</span>');
+      btn.textContent='กำลังดึง...';
+      gsProg(got,total,'⏳ กำลังดึงสถานะจาก Google Sheet',name);
     });
     if(!r.rows.length)throw new Error('ชีทไม่มีข้อมูล');
     stF={name:'Google Sheet',raw:[['เลขพัสดุ','สถานะ']].concat(r.rows.map(function(x){return [x[0],x[1]];}))};
@@ -1074,7 +1092,7 @@ async function gsFetch(){
     note('stMsg','ok','✅ ดึงมาแล้ว '+r.rows.length.toLocaleString()+' แถว · '+esc(r.meta.carrier||''));
     stPreview();
   }catch(e){note('stMsg','err','❌ '+esc(e.message||e));}
-  finally{btn.textContent=t0;btn.disabled=false;}
+  finally{btn.textContent=t0;btn.disabled=false;gsProgDone();}
 }
 async function gsFull(){
   const c=sbClient();
@@ -1082,8 +1100,8 @@ async function gsFull(){
   const btn=$('btnGsFull');btn.disabled=true;const t0=btn.textContent;
   try{
     const r=await gsAll('full',function(got,total,name){
-      btn.textContent='ดึง '+got.toLocaleString()+'/'+total.toLocaleString()+'...';
-      note('stMsg','info','⏳ กำลังดึงข้อมูล '+got.toLocaleString()+' / '+total.toLocaleString()+' แถว<br><span style="font-size:12px">'+esc(name)+'</span>');
+      btn.textContent='กำลังดึง...';
+      gsProg(got,total,'⏳ ขั้นที่ 1/3 · ดึงข้อมูลจาก Google Sheet',name);
     });
     if(!r.rows.length)throw new Error('ชีทไม่มีข้อมูล');
 
@@ -1103,8 +1121,8 @@ async function gsFull(){
 
     let up=0;
     for(let i=0;i<parcels.length;i+=500){
-      btn.textContent='บันทึก '+Math.min(i+500,parcels.length).toLocaleString()+'/'+parcels.length.toLocaleString()+'...';
-      note('stMsg','info','⏳ กำลังบันทึกเข้าระบบ '+Math.min(i+500,parcels.length).toLocaleString()+' / '+parcels.length.toLocaleString());
+      btn.textContent='กำลังบันทึก...';
+      gsProg(Math.min(i+500,parcels.length),parcels.length,'💾 ขั้นที่ 2/3 · บันทึกพัสดุเข้าระบบ');
       const r2=await c.rpc('bulk_parcel_upsert',{p:parcels.slice(i,i+500)});
       if(r2.error)throw r2.error;
       up+=Number(r2.data)||0;
@@ -1117,7 +1135,8 @@ async function gsFull(){
     for(const k in marks){
       const list=marks[k];
       for(let i=0;i<list.length;i+=500){
-        btn.textContent='ติดสถานะ '+lbl[k][1]+' '+Math.min(i+500,list.length).toLocaleString()+'/'+list.length.toLocaleString();
+        btn.textContent='กำลังติดสถานะ...';
+        gsProg(Math.min(i+500,list.length),list.length,'🏷️ ขั้นที่ 3/3 · ติดสถานะ '+lbl[k][1]);
         const r3=await c.rpc('bulk_parcel_mark',{p:list.slice(i,i+500).map(function(x){return {k:x};}),
                                                 p_state:k,p_status:lbl[k][0]});
         if(r3.error)throw r3.error;
@@ -1130,7 +1149,7 @@ async function gsFull(){
       (noDate?'<br><span style="font-size:12px">⚠️ '+noDate.toLocaleString()+' ชิ้นไม่มีวันที่รับฝาก จะไม่ถูกนับเข้าเดือนไหน</span>':''));
     stSummary();
   }catch(e){note('stMsg','err','❌ '+esc(e.message||e));}
-  finally{btn.textContent=t0;btn.disabled=false;}
+  finally{btn.textContent=t0;btn.disabled=false;gsProgDone();}
 }
 async function stSummary(){
   const c=sbClient();
