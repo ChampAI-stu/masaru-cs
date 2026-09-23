@@ -379,7 +379,7 @@ details.more summary{cursor:pointer;color:var(--blue);font-size:13.5px;font-weig
   /* ---------- หน้าเข้าสู่ระบบ ---------- */
   function renderAuth(subtitle){
     var w=document.createElement('div');w.id='authScreen';w.className='auth';
-    w.innerHTML='<div class="auth-card">'+
+    w.innerHTML='<div class="exec-auth-stage"><div class="auth-card">'+
       '<div class="alogo"><img src="'+LOGO+'" alt="MASARU"></div>'+
       '<h2>MASARU CS</h2><div class="asub">'+esc(subtitle||'ระบบงานฝ่าย CS')+' — เข้าสู่ระบบเพื่อใช้งาน</div>'+
       '<div id="loginBox">'+
@@ -396,6 +396,11 @@ details.more summary{cursor:pointer;color:var(--blue);font-size:13.5px;font-weig
         '<button class="btn primary" id="su_btn">สมัครสมาชิก</button>'+
         '<div class="msg err hide" id="su_err"></div><div class="msg ok hide" id="su_ok"></div>'+
         '<div class="switch">มีบัญชีแล้ว? <span class="link" id="au_toLogin">เข้าสู่ระบบ</span></div>'+
+      '</div></div><div class="exec-auth-art" aria-hidden="true">'+
+      '<div class="exec-auth-orbit exec-auth-orbit-a"></div><div class="exec-auth-orbit exec-auth-orbit-b"></div>'+
+      '<div class="exec-auth-kicker">✦ &nbsp; THE INSIGHT ROOM &nbsp; ✦</div>'+
+      '<svg class="exec-login-illustration" viewBox="0 0 680 610"><use href="#exec-login-art"/></svg>'+
+      '<div class="exec-auth-art-copy"><small>MASARU · EXECUTIVE VIEW</small><h1>เห็นภาพรวม<br><em>ในมุมที่สวยขึ้น</em></h1><p>เริ่มต้นวันด้วยข้อมูลที่มองเห็นชัดและเข้าใจง่าย</p></div>'+
       '</div></div>';
     document.body.appendChild(w);
     return w;
@@ -506,20 +511,109 @@ details.more summary{cursor:pointer;color:var(--blue);font-size:13.5px;font-weig
   .lg{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:8px}
   .lg span{display:inline-flex;align-items:center;gap:6px}
 </style>
+<style>
+/* Executive room — a calm data observatory with its own illustration language. */
+:root{--navy:#372f64;--navy-2:#38335e;--navy-3:#574d86;--brand:#e566a3;--brand-2:#d74e95;--blue:#8b70bb;--gold:#b78f51;--ok:#438568;--warn:#aa7b42;--err:#c35479;--violet:#8869b5;--slate:#718099;--ink:#35314d;--muted:#756e87;--faint:#a49bb0;--line:#e9dfed;--line-2:#f6f0f8;--bg:#fcf9fe;--card:#fff;--ok-bg:#eaf8f1;--warn-bg:#fff7e9;--err-bg:#fff0f5;--info-bg:#f3edfb;--violet-bg:#f2eafa;--r-lg:20px;--sh:0 8px 25px #6050790e;--sh-lg:0 24px 60px #35295938}
+body{min-height:100vh;overflow-x:hidden;color:var(--ink);background:radial-gradient(ellipse at 3% 12%,#f0e7fa 0,transparent 30%),radial-gradient(ellipse at 97% 58%,#fff0f5 0,transparent 36%),var(--bg)}
+body::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;background-image:radial-gradient(#dbcbe7 1px,transparent 1px);background-size:27px 27px;opacity:.25}
+.exec-art-library{position:absolute;width:0;height:0;overflow:hidden}
+button,input,select{font-family:inherit}button:focus-visible,a:focus-visible{outline:3px solid #ae8ad0;outline-offset:3px}
+.mhead{background:#f1e4fa;color:#473c72;border-bottom:1px solid #dfd0eb;box-shadow:0 5px 18px #473a6110}
+.mhead-in{max-width:1280px;min-height:76px;padding:10px 24px}.mtitle{font-size:18px;color:#3d356b}.mtitle .logo{height:27px;box-sizing:content-box;background:#38335d;padding:5px 9px;border-radius:8px}.msub{color:#9477a9;font-size:11px;font-weight:700;letter-spacing:.07em}.mright .who{color:#6c5d81;background:#fff;border:1px solid #e7d8ed;border-radius:99px;padding:7px 12px}.mbtn{color:#675381;background:#fffcff;border-color:#e2d1eb;border-radius:99px;padding:8px 15px;transition:transform .2s,background .2s}.mbtn:hover{background:#f8f0fb;border-color:#cdb0df;transform:translateY(-2px)}
+.page{max-width:1280px;padding:28px 24px 65px}.page-head{position:relative;isolation:isolate;display:flex;align-items:center;min-height:345px;padding:32px clamp(26px,4.3vw,57px);margin-bottom:20px;border:1px solid #e5d6ea;border-radius:27px;overflow:hidden;background:radial-gradient(circle at 78% 42%,#fffdfa 0 15%,transparent 15.2%),linear-gradient(111deg,#f3eafa 0,#fffdfc 57%,#fbeef7 100%);box-shadow:0 18px 43px #705b8b18}
+.page-head::before{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;background-image:linear-gradient(#ebdfef 1px,transparent 1px),linear-gradient(90deg,#ebdfef 1px,transparent 1px);background-size:35px 35px;mask-image:linear-gradient(90deg,transparent 30%,#000 100%);opacity:.45}
+.page-head>div:first-child{position:relative;z-index:2;width:68%;max-width:780px}.exec-eyebrow{display:inline-flex;align-items:center;gap:8px;color:#9b72a8;font-size:11px;font-weight:800;letter-spacing:.17em;margin-bottom:9px}.exec-eyebrow::before{content:'✧';font-size:20px;color:#e978b1;line-height:1}
+.page-head h1{font-size:clamp(29px,3.1vw,42px);line-height:1.2;letter-spacing:-.04em;color:#393065}.page-head p{margin:10px 0 0;max-width:650px;color:#746e85;font-size:14px;line-height:1.7}
+.exec-hero-art{position:absolute;z-index:1;width:min(39%,465px);right:0;bottom:-8px;pointer-events:none;filter:drop-shadow(0 15px 11px #705a8a1a);animation:exec-art-drift 6.5s ease-in-out infinite}@keyframes exec-art-drift{50%{transform:translateY(-8px) rotate(.5deg)}}
+.exec-period-note{display:inline-flex;align-items:center;gap:7px;margin-top:16px;color:#9076a5;font-size:12px;font-weight:700}.exec-period-note::before{content:'◌';display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#eee0fa;color:#8e6db4;font-size:19px;line-height:1}
+.filters{margin-top:17px!important;margin-left:0!important;align-items:flex-end!important;gap:10px!important}.filters .field{min-width:148px}.filters label{color:#6d5c82;font-size:12px;font-weight:700;margin-bottom:5px}.filters input,.filters select{height:43px;background:#fffdfd;border:1px solid #dfd0e9;border-radius:11px;color:#453c66;box-shadow:0 3px 8px #6953850a}.filters .btn{height:43px}
+.btn{border-radius:11px;transition:transform .18s,box-shadow .18s,background .18s}.btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 16px #6d55882a}.btn.gold{background:linear-gradient(112deg,#e973aa,#d960a1);box-shadow:0 7px 15px #d960a130}.btn.gold:hover{background:linear-gradient(112deg,#e66ca8,#c64a91)}.btn:disabled{background:#d7cedc!important;color:#fff!important;box-shadow:none}
+input:focus,select:focus{border-color:#b58fd1;box-shadow:0 0 0 3px #eddcf6}label{color:#726985}
+.card{position:relative;overflow:hidden;border:1px solid #ebdfef;border-radius:21px;padding:25px 26px;margin-bottom:18px;background:linear-gradient(148deg,#fff,#fff 78%,#fffbfe);box-shadow:0 10px 26px #66517f0e}
+.card>h2{font-size:18px;color:#45376e;margin-bottom:5px;letter-spacing:-.015em}.card>h2::before{content:'';width:5px;height:22px;border-radius:10px;background:linear-gradient(#e986b6,#ad89d0);flex:none}.card .desc{color:#81768e;font-size:13px;margin:0 0 17px}
+.card:first-child{background:radial-gradient(circle at 95% 0,#f8effb,transparent 35%),#fff}.card:first-child::after{content:'✦';position:absolute;right:22px;top:15px;color:#e5c9e9;font-size:26px;pointer-events:none}
+.kpis{gap:12px;grid-template-columns:repeat(auto-fit,minmax(205px,1fr))}.kpi{min-height:111px;padding:17px 18px 16px 21px;border:1px solid #eae0ed;border-radius:16px;background:linear-gradient(155deg,#fff,#fffafb);box-shadow:0 3px 10px #745e8b08;transition:transform .2s,box-shadow .2s}.kpi:hover{transform:translateY(-3px);box-shadow:0 12px 20px #735c8b16}.kpi::before{width:4px;background:#9a79c5}.kpi .l{font-size:12px;color:#82758f;line-height:1.45}.kpi .v{font-size:clamp(19px,2vw,25px);color:#4b3f76;margin-top:6px;letter-spacing:-.025em;overflow-wrap:anywhere}.kpi .s{font-size:11.5px;color:#91869c;margin-top:7px}.kpi.navy::before{background:#9378bf}.kpi.gold::before{background:#d3a766}.kpi.gold .v{color:#9a6b36}.kpi.blue::before{background:#79a0cc}.kpi.blue .v{color:#587ba9}.kpi.green::before{background:#67ad8a}.kpi.green .v{color:#428261}.kpi.red::before{background:#e286a5}.kpi.red .v{color:#b45275}.kpi.orange::before{background:#dfb17b}.kpi.orange .v{color:#a7753c}
+.bar{height:16px;border-radius:99px;background:#ede5f0;box-shadow:inset 0 2px 4px #725b811b}.bar i{transition:width .55s ease}.bar i:first-child{border-radius:99px 0 0 99px}.bar i:last-child{border-radius:0 99px 99px 0}.lg{margin-top:12px;color:#7b7088;gap:13px}.lg .dot{border-radius:50%}
+.tbl-scroll{border:1px solid #eadfec;border-radius:15px;background:#fff;box-shadow:inset 0 1px 3px #6e5b7b0d}table{font-variant-numeric:tabular-nums}th{padding:13px 11px;background:#f7f0fa;color:#574775;border-bottom:1px solid #e8dced}td{padding:11px;color:#50475d;border-color:#f2ebf2}tbody tr:nth-child(even):not(.tot):not(.cur) td{background:#fdfafd}tbody tr:hover td{background:#f9f1fb!important}tr.tot td{background:#f2e9f8!important;color:#45346b;font-weight:800}tr.cur td{background:#fff1f8!important;color:#824a75;font-weight:700;border-bottom-color:#f6d8ea}tr.cur td:first-child{box-shadow:inset 4px 0 #e177ae}
+.msg.info,.note{background:#f4edfb;border-color:#e4d6ef;color:#665184}.msg.err{background:#fff0f5;border-color:#f1cddd;color:#9d4568}.msg.warn{background:#fff7e9;border-color:#efddb9;color:#856024}#loading,.loading{background:#fff9ffdd}.spinner{border-color:#e9d9f0;border-top-color:#d775b0}.lmsg{color:#655084}.toast{background:#584a78}.toast.ok{background:#377c5c}.toast.err{background:#9a4366}.toast.warn{background:#967044}.foot{color:#aca0b4;padding-top:17px}
+/* Login: moonlit constellation, visually separate from the paper report in the page header. */
+.auth{overflow:auto;padding:20px;background:radial-gradient(circle at 6% 11%,#9d87bf 0,transparent 34%),radial-gradient(circle at 98% 85%,#bb91b9 0,transparent 33%),#77709f}
+.exec-auth-stage{width:min(1170px,100%);min-height:min(720px,calc(100svh - 40px));display:grid;grid-template-columns:minmax(365px,.91fr) minmax(0,1.09fr);overflow:hidden;border:1px solid #e5d6eb;border-radius:24px;background:#fffdfb;box-shadow:0 32px 80px #37274a59;animation:exec-arrive .65s ease-out both}@keyframes exec-arrive{from{opacity:0;transform:translateY(17px)}to{opacity:1;transform:translateY(0)}}
+.auth .auth-card{width:auto;max-width:none;border-radius:0;background:linear-gradient(145deg,#fffefe,#fff9fc 70%,#f9f0fc);box-shadow:none;padding:48px clamp(28px,5vw,70px);display:flex;flex-direction:column;justify-content:center}.auth-card .alogo{width:max-content;background:#38335d;border-radius:13px;padding:13px 17px;margin-bottom:28px;box-shadow:0 6px 16px #51426b20}.auth-card .alogo img{height:27px}.auth-card h2{font-size:30px;letter-spacing:-.03em;line-height:1.2;color:#393265;margin-bottom:6px}.auth-card .asub{font-size:14px;line-height:1.6;color:#7c718d;margin-bottom:27px}.auth-card .asub::before{content:'✧  ';color:#e67fb3}.auth-card .fld{margin-bottom:15px}.auth-card label{color:#615475}.auth-card input{height:51px;border-radius:12px}.auth-card .btn{height:52px;margin-top:12px;background:linear-gradient(110deg,#ea77ad,#d960a0);box-shadow:0 8px 17px #da6aa52c}.auth-card .switch{font-size:14px;margin-top:21px;color:#81758e}.auth-card .link{color:#d35194;text-decoration:underline;text-decoration-color:#e9b0ce;text-underline-offset:3px}
+.exec-auth-art{position:relative;isolation:isolate;min-height:650px;overflow:hidden;background:radial-gradient(circle at 75% 19%,#fff1dd 0 7%,transparent 7.2%),linear-gradient(155deg,#eee6fa 0,#e6def6 53%,#f8e0ee 100%)}.exec-auth-art::before{content:'';position:absolute;inset:0;background-image:radial-gradient(#fff 1.4px,transparent 1.4px);background-size:31px 31px;opacity:.58;mask-image:linear-gradient(#000,transparent 90%)}.exec-auth-art::after{content:'';position:absolute;left:-15%;bottom:-136px;width:130%;height:230px;border-radius:50%;background:#fdf5fa;transform:rotate(-6deg)}.exec-auth-orbit{position:absolute;border:1px solid #fff9;pointer-events:none;border-radius:50%}.exec-auth-orbit-a{width:530px;height:530px;left:12%;top:-20%}.exec-auth-orbit-b{width:740px;height:740px;left:-7%;top:-39%;border-color:#fff7}
+.exec-auth-kicker{position:absolute;z-index:2;top:28px;left:32px;padding:8px 13px;border:1px solid #e2cfef;border-radius:99px;background:#fffcffcc;color:#916fa9;font-size:11px;letter-spacing:.13em;font-weight:800}.exec-login-illustration{position:absolute;z-index:1;top:45%;left:50%;width:min(92%,580px);height:auto;transform:translate(-50%,-50%);filter:drop-shadow(0 17px 12px #69518426);animation:exec-observe 6.4s ease-in-out infinite}@keyframes exec-observe{50%{transform:translate(-50%,-52%) rotate(.7deg)}}
+.exec-auth-art-copy{position:absolute;z-index:2;left:6%;right:6%;bottom:43px;text-align:center}.exec-auth-art-copy small{font-size:11px;font-weight:800;letter-spacing:.19em;color:#8f71a5}.exec-auth-art-copy h1{margin:6px 0;font-family:Georgia,"Sarabun",serif;color:#38305f;font-size:clamp(30px,4vw,48px);letter-spacing:-.035em;line-height:1.16}.exec-auth-art-copy h1 em{font-style:normal;color:#cf639b}.exec-auth-art-copy p{font-size:14px;color:#7d6c8d;margin:0}
+@media(max-width:920px){.page-head>div:first-child{width:72%}.exec-hero-art{width:36%;right:-4%}.filters .field{min-width:138px}.exec-auth-stage{grid-template-columns:minmax(335px,.95fr) minmax(0,1.05fr)}.auth .auth-card{padding:38px 33px}}
+@media(max-width:760px){.page{padding:17px 13px 48px}.page-head{display:block;min-height:0;padding:27px 23px 7px}.page-head>div:first-child{width:100%;max-width:none}.page-head p{font-size:13px}.filters{margin-top:18px!important}.filters .field{flex:1;min-width:140px}.filters .btn{flex:1 0 100%}.exec-hero-art{position:relative;display:block;width:min(100%,300px);height:auto;right:auto;bottom:auto;margin:-3px auto -13px}.card{padding:21px 17px}.exec-auth-stage{display:block;max-width:530px;min-height:0}.exec-auth-art{min-height:265px}.exec-auth-kicker{top:12px;left:15px;font-size:9px}.exec-login-illustration{width:270px;top:44%}.exec-auth-art-copy{bottom:16px}.exec-auth-art-copy small,.exec-auth-art-copy p{display:none}.exec-auth-art-copy h1{font-size:22px;line-height:1.12;margin:0}.auth .auth-card{min-height:0;padding:35px 30px}.auth-card .alogo{margin-bottom:19px}}
+@media(max-width:460px){.page-head{padding:25px 18px 3px}.page-head h1{font-size:28px}.filters .field{min-width:120px}.kpis{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}.kpi{padding:15px}.kpi .v{font-size:19px}.mhead-in{padding:10px 14px}.mtitle{font-size:16px}.mtitle .logo{height:20px}}
+@media(prefers-reduced-motion:reduce){.exec-hero-art,.exec-login-illustration,.exec-auth-stage{animation:none!important}.kpi,.btn,.mbtn{transition:none!important}}
+</style>
 </head>
 <body>
+<svg class="exec-art-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <defs>
+    <linearGradient id="exec-window" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#8c7abc"/><stop offset=".58" stop-color="#b8a0d2"/><stop offset="1" stop-color="#e9bbd3"/></linearGradient>
+    <linearGradient id="exec-horizon" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#ffe4f0"/><stop offset="1" stop-color="#f5d5e8"/></linearGradient>
+    <linearGradient id="exec-glass" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fffeff"/><stop offset="1" stop-color="#f9effb"/></linearGradient>
+    <linearGradient id="exec-paper" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffffff"/><stop offset="1" stop-color="#fff8fc"/></linearGradient>
+    <linearGradient id="exec-chart" x1="0" y1="1" x2="1" y2="0"><stop stop-color="#e5b2d2"/><stop offset="1" stop-color="#ad8dcd"/></linearGradient>
+  </defs>
+  <symbol id="exec-login-art" viewBox="0 0 680 610">
+    <!-- An arched observatory window looking over a glowing data skyline. -->
+    <ellipse cx="338" cy="537" rx="286" ry="29" fill="#876aa7" opacity=".16"/>
+    <path d="M125 444V208C125 82 213 29 340 29s215 53 215 179v236z" fill="#fff9ff" stroke="#705c9d" stroke-width="8"/>
+    <path d="M146 422V208c0-104 74-159 194-159s194 55 194 159v214z" fill="url(#exec-window)"/>
+    <path d="M146 334q88-28 192 8t196-9v89H146z" fill="url(#exec-horizon)"/>
+    <circle cx="449" cy="142" r="43" fill="#fff3d9"/><circle cx="462" cy="129" r="40" fill="#af9ac7"/>
+    <g fill="#fff9dc"><path d="M225 138l6 15 16 5-16 5-6 15-6-15-16-5 16-5z"/><path d="M359 107l4 10 11 4-11 4-4 10-4-10-10-4 10-4z"/><circle cx="475" cy="240" r="4"/><circle cx="195" cy="260" r="3"/></g>
+    <path d="M187 284l74-53 66 33 71-79 94 43" fill="none" stroke="#fff9ee" stroke-width="4" stroke-linecap="round" stroke-dasharray="5 10"/>
+    <g fill="#fffbe9" stroke="#e5bad7" stroke-width="3"><circle cx="187" cy="284" r="9"/><circle cx="261" cy="231" r="9"/><circle cx="327" cy="264" r="9"/><circle cx="398" cy="185" r="11"/><circle cx="492" cy="228" r="9"/></g>
+    <path d="M172 419v-63h27v63m13 0v-42h28v42m12 0v-93h29v93m13 0v-60h27v60m11 0v-110h34v110m13 0v-51h27v51m10 0v-80h31v80m10 0v-42h29v42" fill="#f9e7f2" stroke="#cfaed5" stroke-width="3"/>
+    <path d="M340 50v373M146 274h388" stroke="#fff6ff" stroke-width="7" opacity=".66"/><path d="M340 50v373M146 274h388" stroke="#705c9d" stroke-width="2" opacity=".62"/>
+    <rect x="103" y="424" width="474" height="28" rx="13" fill="#f7e3ee" stroke="#705c9d" stroke-width="6"/>
+    <rect x="75" y="448" width="530" height="23" rx="11" fill="#b29ad0" stroke="#705c9d" stroke-width="5"/>
+    <!-- Compact desk of insights and a tiny telescope. -->
+    <g transform="translate(172 338) rotate(-8 101 91)"><rect x="0" y="0" width="202" height="146" rx="16" fill="url(#exec-glass)" stroke="#705c9d" stroke-width="5"/><rect x="15" y="18" width="107" height="11" rx="5" fill="#d4c1e6"/><rect x="15" y="39" width="66" height="8" rx="4" fill="#eadfeb"/><path d="M16 116l40-24 33 12 40-46 48 12" fill="none" stroke="#e77caa" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 123h165" stroke="#e6d9ef" stroke-width="4"/><circle cx="129" cy="58" r="7" fill="#fff1c5" stroke="#bd79aa" stroke-width="3"/></g>
+    <g transform="translate(425 343) rotate(13 63 76)"><path d="M15 40l58-29 21 33-61 33z" fill="#e4c5ec" stroke="#705c9d" stroke-width="5"/><ellipse cx="17" cy="51" rx="17" ry="27" fill="#fff8fe" stroke="#705c9d" stroke-width="5"/><circle cx="17" cy="51" r="9" fill="#cbb4e1"/><path d="M83 55l27 98" stroke="#705c9d" stroke-width="8" stroke-linecap="round"/><path d="M108 153l-31 34m31-34 39 33m-39-33 1 34" stroke="#705c9d" stroke-width="6" stroke-linecap="round"/></g>
+    <g fill="#fff6c9" stroke="#936fb6" stroke-width="2"><path d="M83 169l4 11 12 4-12 4-4 11-4-11-12-4 12-4z"/><path d="M593 103l5 14 14 5-14 5-5 14-5-14-14-5 14-5z"/><path d="M585 303l4 10 11 4-11 4-4 10-4-10-10-4 10-4z"/></g>
+    <g fill="#eaa8c9"><circle cx="103" cy="288" r="5"/><circle cx="609" cy="247" r="5"/><circle cx="84" cy="370" r="3"/><circle cx="604" cy="383" r="3"/></g>
+  </symbol>
+  <symbol id="exec-hero-art" viewBox="0 0 700 490">
+    <ellipse cx="375" cy="462" rx="288" ry="17" fill="#8f7aa9" opacity=".19"/>
+    <circle cx="378" cy="236" r="194" fill="#f3e4f9"/><circle cx="378" cy="236" r="158" fill="#fffbff" opacity=".78"/>
+    <!-- Layered sheets with a readable chart and a separate radial summary. -->
+    <g transform="translate(132 65) rotate(-9 198 178)"><rect x="0" y="0" width="393" height="360" rx="22" fill="#d9c5e9" stroke="#76629e" stroke-width="4"/><rect x="14" y="12" width="366" height="334" rx="15" fill="url(#exec-paper)" stroke="#eee0f2" stroke-width="2"/>
+      <rect x="40" y="39" width="122" height="10" rx="5" fill="#b49bcf"/><rect x="40" y="59" width="77" height="7" rx="3.5" fill="#e5d9e9"/>
+      <path d="M42 264h302m-302-54h302m-302-54h302m-302-54h302" stroke="#eee5f0" stroke-width="3"/>
+      <path d="M47 280V232l58-45 52 22 52-76 55 18 75-90v219z" fill="url(#exec-chart)" opacity=".28"/>
+      <path d="M47 232l58-45 52 22 52-76 55 18 75-90" fill="none" stroke="#a77ac3" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+      <g fill="#fff8ec" stroke="#a77ac3" stroke-width="5"><circle cx="47" cy="232" r="8"/><circle cx="105" cy="187" r="8"/><circle cx="157" cy="209" r="8"/><circle cx="209" cy="133" r="9"/><circle cx="264" cy="151" r="8"/><circle cx="339" cy="61" r="10"/></g>
+      <rect x="42" y="299" width="63" height="9" rx="5" fill="#e6d8e8"/><rect x="115" y="299" width="50" height="9" rx="5" fill="#f2d6e4"/><rect x="175" y="299" width="76" height="9" rx="5" fill="#e6d8e8"/>
+    </g>
+    <g transform="translate(366 196) rotate(12 116 113)"><rect x="0" y="0" width="238" height="224" rx="21" fill="#fffafc" stroke="#76629e" stroke-width="4"/><rect x="21" y="23" width="100" height="9" rx="4" fill="#d2b9df"/><rect x="21" y="41" width="74" height="7" rx="3.5" fill="#e6dbea"/>
+      <circle cx="114" cy="125" r="65" fill="none" stroke="#f1e7f3" stroke-width="28"/><circle cx="114" cy="125" r="65" fill="none" stroke="#e68eae" stroke-width="28" stroke-dasharray="151 410" transform="rotate(-90 114 125)"/><circle cx="114" cy="125" r="65" fill="none" stroke="#ad90cd" stroke-width="28" stroke-dasharray="142 410" stroke-dashoffset="-154" transform="rotate(-90 114 125)"/><circle cx="114" cy="125" r="65" fill="none" stroke="#e8c382" stroke-width="28" stroke-dasharray="71 410" stroke-dashoffset="-299" transform="rotate(-90 114 125)"/>
+      <path d="M102 124l9 9 19-23" fill="none" stroke="#b084c5" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <g transform="translate(61 213) rotate(-11 66 54)"><rect x="0" y="0" width="132" height="108" rx="18" fill="#fff9ec" stroke="#76629e" stroke-width="4"/><rect x="20" y="21" width="54" height="7" rx="3" fill="#d5bedf"/><path d="M20 78h94" stroke="#ecdfeb" stroke-width="4"/><rect x="23" y="56" width="16" height="21" rx="4" fill="#dfb4d5"/><rect x="47" y="44" width="16" height="33" rx="4" fill="#c1a4d9"/><rect x="71" y="36" width="16" height="41" rx="4" fill="#e1b878"/><rect x="95" y="29" width="16" height="48" rx="4" fill="#df88aa"/></g>
+    <g fill="#fff0c1" stroke="#8b72b0" stroke-width="2"><path d="M93 83l5 14 15 5-15 5-5 14-5-14-15-5 15-5z"/><path d="M604 48l4 11 12 4-12 4-4 12-4-12-12-4 12-4z"/><path d="M628 330l3 10 11 3-11 4-3 10-4-10-11-4 11-3z"/></g>
+    <circle cx="650" cy="167" r="5" fill="#e8a8cc"/><circle cx="72" cy="403" r="5" fill="#c9aedf"/><circle cx="543" cy="86" r="4" fill="#e7a9c8"/>
+  </symbol>
+</svg>
 <main class="page">
   <div class="page-head">
     <div>
+      <div class="exec-eyebrow">EXECUTIVE INSIGHTS · MASARU CS</div>
       <h1>รายงานผู้บริหาร</h1>
       <p>ยอดส่ง · ค่าขนส่ง · เซ็นรับ / ตีกลับ · เคลม — นับตามวันที่ฝากส่ง (เคลมนับตามวันที่รอบบิล)</p>
+      <div class="exec-period-note">เลือกช่วงเวลาเพื่อดูภาพรวมและแนวโน้มจากข้อมูลจริง</div>
+      <div class="actions filters">
+        <div class="field"><label for="mon">เดือน</label><input type="month" id="mon"></div>
+        <div class="field"><label for="back">เทียบย้อนหลัง</label>
+          <select id="back"><option value="6">6 เดือน</option><option value="12" selected>12 เดือน</option><option value="24">24 เดือน</option></select></div>
+        <button class="btn gold" id="btnDl" disabled>⬇ ดาวน์โหลด Excel</button>
+      </div>
     </div>
-    <div class="actions filters">
-      <div class="field"><label>เดือน</label><input type="month" id="mon"></div>
-      <div class="field"><label>เทียบย้อนหลัง</label>
-        <select id="back"><option value="6">6 เดือน</option><option value="12" selected>12 เดือน</option><option value="24">24 เดือน</option></select></div>
-      <button class="btn gold" id="btnDl" disabled>⬇ ดาวน์โหลด Excel</button>
-    </div>
+    <svg class="exec-hero-art" viewBox="0 0 700 490" aria-hidden="true"><use href="#exec-hero-art"/></svg>
   </div>
   <div id="msg"></div>
 
