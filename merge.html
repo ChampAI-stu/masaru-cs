@@ -1372,7 +1372,9 @@ async function gsAll(mode,onProgress){
     }
   }
   if(!m||!m.ok){console.error('[MASARU CS] GS meta',m);throw new Error('Google Sheet ตอบกลับว่า: '+((m&&m.error)||'ดึงรายการไฟล์ไม่สำเร็จ')+' — แจ้งผู้ดูแลระบบ');}
-  let lim=Math.min(6000,Number(m.chunk_max)||6000);
+  /* เริ่มก้อนเล็กก่อน แล้วปรับตามความเร็วจริงของชีท (เร็ว→ขยาย · ช้า→ลด) */
+  const cap=Math.min(6000,Number(m.chunk_max)||6000);
+  let lim=Math.min(1500,cap);
   console.info('[MASARU CS] Google Sheet meta',m);
   const allFiles=Array.isArray(m.files)?m.files:[];
   /* ข้ามเฉพาะไฟล์ที่บอกชัดว่า 0 แถว — ถ้าไม่ได้บอกจำนวนแถวมา ให้ลองดึงดู */
@@ -1386,7 +1388,8 @@ async function gsAll(mode,onProgress){
     const f=files[fi];
     let off=0;
     while(true){
-      onProgress&&onProgress(got,total,'ไฟล์ '+(fi+1)+'/'+files.length+' · '+(f.name||''));
+      onProgress&&onProgress(got,total,'ไฟล์ '+(fi+1)+'/'+files.length+' · '+(f.name||'')+' · กำลังรอก้อนละ '+lim.toLocaleString()+' แถว');
+      const tq=Date.now();
       /* ก้อนใหญ่อาจทำให้ Apps Script ตอบไม่ทัน/ล้ม → ลองใหม่โดยลดขนาดก้อนลงครึ่งหนึ่ง */
       let d=null;
       for(let t=1;t<=4&&!d;t++){
@@ -1407,6 +1410,8 @@ async function gsAll(mode,onProgress){
         seen[k]=1;out.push(r);
       });
       got+=(d.rows||[]).length;
+      const dt=Date.now()-tq;
+      if(dt<15000)lim=Math.min(cap,lim*2);else if(dt>45000)lim=Math.max(500,Math.floor(lim/2));
       if(d.next_offset==null)break;
       off=d.next_offset;
     }
