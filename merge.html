@@ -23,7 +23,7 @@
   --r-sm:8px; --r:12px; --r-lg:16px;
   --sh:0 1px 2px rgba(20,40,74,.05),0 2px 8px rgba(20,40,74,.04);
   --sh-lg:0 12px 40px rgba(13,27,51,.22);
-  --topbar:60px;
+  --topbar:0px;
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
@@ -59,6 +59,19 @@ code{background:var(--line-2);border-radius:5px;padding:1px 6px;font-size:.92em}
   .nav{order:3;flex-basis:100%;padding-bottom:6px}
 }
 
+
+/* ---------------- ปุ่มกลับหน้าหลัก (แทนแถบเมนูด้านบน) ---------------- */
+.backbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.back-home{display:inline-flex;align-items:center;gap:8px;background:#fff;color:var(--navy);border:1px solid #CFD7E3;border-radius:10px;
+  padding:8px 15px;font-size:14px;font-weight:700;text-decoration:none;box-shadow:var(--sh);transition:background .12s,border-color .12s,transform .12s}
+.back-home span{font-size:16px;line-height:1;transition:transform .15s}
+.back-home:hover{background:var(--line-2);border-color:#B8C4D4}
+.back-home:hover span{transform:translateX(-3px)}
+.backbar .user{margin-left:auto}
+.backbar .user .who{color:var(--muted)}
+.backbar .user button{background:#fff;color:var(--navy);border:1px solid #CFD7E3}
+.backbar .user button:hover{background:var(--err-bg);color:var(--err);border-color:#F0C4C6}
+@media(max-width:600px){.backbar .user .who{display:none}}
 /* ---------------- Page layout ---------------- */
 .page{max-width:1320px;margin:0 auto;padding:22px 18px 60px}
 .page-head{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:18px}
@@ -342,16 +355,13 @@ details.more summary{cursor:pointer;color:var(--blue);font-size:13.5px;font-weig
 
   /* ---------- Top bar ---------- */
   function renderTopbar(page){
-    var bar=document.createElement('header');bar.className='topbar';
-    bar.innerHTML='<div class="topbar-in">'+
-      '<a class="brand" href="index.html"><img class="logo" src="'+LOGO+'" alt="MASARU"><small>CS</small></a>'+
-      '<nav class="nav">'+CONFIG.APPS.map(function(a){
-        return '<a href="'+a.href+'"'+(a.id===page?' class="on" aria-current="page"':'')+'>'+esc(a.label)+'</a>';}).join('')+'</nav>'+
-      '<div class="user hide" id="userBox"><span class="who" id="userEmail"></span><button id="logoutBtn">ออกจากระบบ</button></div>'+
-    '</div>';
-    document.body.insertBefore(bar,document.body.firstChild);
-    var on=bar.querySelector('.nav a.on');if(on&&on.scrollIntoView)try{on.scrollIntoView({inline:'center',block:'nearest'});}catch(e){}
-    $('logoutBtn').onclick=async function(){try{await client().auth.signOut();}catch(e){}location.reload();};
+    /* ไม่มีแถบเมนูด้านบน — มีแค่ปุ่มกลับหน้าหลัก + ผู้ใช้/ออกจากระบบ */
+    var bar=document.createElement('div');bar.className='backbar';
+    bar.innerHTML='<a class="back-home" href="index.html"><span>←</span> กลับหน้าหลัก</a>'+
+      '<div class="user hide" id="userBox"><span class="who" id="userEmail"></span><button id="logoutBtn">ออกจากระบบ</button></div>';
+    var main=document.querySelector('main.page')||document.body;
+    main.insertBefore(bar,main.firstChild);
+    $('logoutBtn').onclick=async function(){try{await client().auth.signOut();}catch(e){}location.href='index.html?logout=1';};
   }
   function setUser(session){
     var u=session&&session.user;
