@@ -379,7 +379,10 @@ details.more summary{cursor:pointer;color:var(--blue);font-size:13.5px;font-weig
   /* ---------- หน้าเข้าสู่ระบบ ---------- */
   function renderAuth(subtitle){
     var w=document.createElement('div');w.id='authScreen';w.className='auth';
-    w.innerHTML='<div class="auth-card">'+
+    w.innerHTML='<div class="auth-stage"><section class="auth-art" aria-hidden="true">'+
+      '<span class="auth-stamp">✿ FILE MERGE STUDIO</span><svg class="auth-illustration" viewBox="0 0 600 520"><use href="#merge-login-art"/></svg>'+
+      '<div class="auth-bubble" id="authSpeech">มาจัดไฟล์ให้เป็นระเบียบกัน ♡</div>'+
+      '<div class="auth-art-copy"><small>MASARU CS HUB</small><h1>A place for every file.</h1><p>พื้นที่เล็ก ๆ ที่ทำให้ไฟล์ทุกใบเข้าที่</p></div></section><div class="auth-card">'+
       '<div class="alogo"><img src="'+LOGO+'" alt="MASARU"></div>'+
       '<h2>MASARU CS</h2><div class="asub">'+esc(subtitle||'ระบบงานฝ่าย CS')+' — เข้าสู่ระบบเพื่อใช้งาน</div>'+
       '<div id="loginBox">'+
@@ -396,7 +399,7 @@ details.more summary{cursor:pointer;color:var(--blue);font-size:13.5px;font-weig
         '<button class="btn primary" id="su_btn">สมัครสมาชิก</button>'+
         '<div class="msg err hide" id="su_err"></div><div class="msg ok hide" id="su_ok"></div>'+
         '<div class="switch">มีบัญชีแล้ว? <span class="link" id="au_toLogin">เข้าสู่ระบบ</span></div>'+
-      '</div></div>';
+      '</div></div></div>';
     document.body.appendChild(w);
     return w;
   }
@@ -514,8 +517,199 @@ details.more summary{cursor:pointer;color:var(--blue);font-size:13.5px;font-weig
   .or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
   #stDetect{font-size:13px;color:var(--muted);margin-top:8px}
 </style>
+<style>
+/* MASARU CS HUB · shipping file atelier */
+.art-library{position:absolute;width:0;height:0;overflow:hidden}
+:root{--navy:#302b61;--navy-2:#37335f;--navy-3:#574b87;--brand:#e955a1;--brand-2:#d74491;--blue:#9372c2;--gold:#8f75b8;--ok:#407f67;--warn:#a06f39;--err:#bf4b73;--violet:#8466ad;--slate:#6d789a;--ink:#36334f;--muted:#726d85;--faint:#9a92aa;--line:#e8dfed;--line-2:#f5eef8;--bg:#fcf8ff;--card:#fff;--ok-bg:#eaf8f0;--warn-bg:#fff6e9;--err-bg:#fff0f5;--info-bg:#f5efff;--violet-bg:#f4ecff;--r-sm:10px;--r:14px;--r-lg:20px;--sh:0 8px 20px rgba(88,64,129,.055);--sh-lg:0 25px 55px rgba(68,47,107,.20)}
+body{background:radial-gradient(ellipse at 5% 17%,#f0e8fc 0,transparent 31%),radial-gradient(ellipse at 96% 70%,#ffeaf5 0,transparent 31%),var(--bg);color:var(--ink);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:-1;opacity:.23;background-image:linear-gradient(#dfd1ed 1px,transparent 1px),linear-gradient(90deg,#dfd1ed 1px,transparent 1px);background-size:58px 58px}
+button,input,select,textarea{font-family:inherit}
+button:focus-visible,a:focus-visible,.drop:focus-visible,.ctab:focus-visible,.subtabs button:focus-visible{outline:3px solid #ad80d3;outline-offset:3px}
+.mhead{background:#f0dfff;color:#3c326c;border-bottom:1px solid #dac7e7;box-shadow:0 5px 20px rgba(69,46,105,.08)}
+.mhead-in{max-width:1280px;min-height:76px;padding:10px 25px;gap:18px}
+.mtitle{color:#3d376b;font-size:18px}.mtitle .logo{height:27px;background:#37335f;padding:5px 9px;border-radius:8px;box-sizing:content-box}.msub{color:#9474aa;font-weight:700;letter-spacing:.08em;font-size:11px}
+.mright .who{color:#69577f;font-size:12px;background:#fff;border:1px solid #e2ceee;padding:7px 13px;border-radius:99px}
+.mbtn{background:#fffafd;color:#655184;border-color:#dfcce9;border-radius:99px;padding:8px 16px;transition:transform .2s,background .2s}.mbtn:hover{background:#f5eafa;border-color:#bfa0d4;transform:translateY(-2px)}
+.page{max-width:1280px;padding:28px 24px 58px;position:relative}
+.page-head{position:relative;isolation:isolate;display:flex;align-content:center;flex-direction:column;justify-content:center;align-items:flex-start;min-height:270px;margin-bottom:17px;padding:36px 48px;border:1px solid #e0d0eb;border-radius:27px;background:radial-gradient(circle at 67% 39%,#fff 0 14%,transparent 14.3%),radial-gradient(circle at 99% 0,#f8dff1 0 20%,transparent 20.2%),linear-gradient(110deg,#f3e9ff,#fff9ff 60%,#f3eaff);box-shadow:0 18px 40px rgba(91,69,135,.09);overflow:hidden}
+.page-head::before{content:'';position:absolute;inset:0;z-index:-1;opacity:.28;background-image:linear-gradient(#dccdeb 1px,transparent 1px),linear-gradient(90deg,#dccdeb 1px,transparent 1px);background-size:45px 45px;mask-image:linear-gradient(90deg,transparent 15%,#000 100%)}
+.page-head::after{content:'✧     ✦          ✧';position:absolute;top:14px;right:6%;font-size:21px;letter-spacing:36px;color:#b994d1;white-space:nowrap;pointer-events:none;animation:hero-shimmer 5s ease-in-out infinite}@keyframes hero-shimmer{50%{opacity:.55;transform:translateY(-5px)}}
+.page-head>div:first-child,.page-head .actions{z-index:2;position:relative;max-width:730px}
+.page-head>div:first-child::before{content:'✿  SHIPPING FILE STUDIO';display:block;font-size:11px;letter-spacing:.18em;color:#a373ab;font-weight:800;margin-bottom:9px}
+.page-head h1{font-size:clamp(28px,3vw,39px);color:#332c65;letter-spacing:-.04em;line-height:1.2}
+.page-head p{color:#736a88;font-size:14px;max-width:660px;line-height:1.6;margin:11px 0 0}
+.page-head .actions{margin:22px 0 0}
+.carrier-switch{border-color:#e1caed;background:#fffefa;border-radius:99px;padding:5px;box-shadow:0 7px 18px #73579118}
+.ctab{border-radius:99px;font-size:14px;color:#7b6d91;padding:9px 17px;transition:transform .2s,background .2s}.ctab:hover{background:#f7edfb;transform:translateY(-2px)}
+.ctab.active[data-carrier=flash]{background:#8f6cbd;color:#fff;box-shadow:0 5px 14px #8364b94a}.ctab.active[data-carrier=post]{background:#e874a6;color:#fff;box-shadow:0 5px 14px #e874a64a}
+body.theme-post{--brand:#e874a6;--brand-2:#d65e91;--hd1:#ce679a;--accent:#e874a6}
+body.theme-post .ctab.active[data-carrier=post],body.theme-post .subtabs button.active,body.theme-post .step,body.theme-post span.num{background:linear-gradient(110deg,#e993ba,#e169a1)}
+.merge-hero-art{position:absolute;z-index:1;right:3%;bottom:-28px;width:min(30%,350px);height:auto;filter:drop-shadow(0 15px 9px #79619821);animation:mascot-bob 5s ease-in-out infinite;pointer-events:none}@keyframes mascot-bob{50%{transform:translateY(-11px) rotate(1deg)}}
+.merge-speech{position:absolute;z-index:3;right:7%;top:20px;max-width:205px;padding:10px 15px;background:#fffefa;border:1px solid #e1cbe8;border-radius:18px 18px 4px 18px;color:#8566a5;box-shadow:0 8px 18px #77659921;font-size:12px;font-weight:700;transform:rotate(3deg);transition:transform .25s}
+.merge-speech::after{content:'';position:absolute;width:12px;height:12px;right:19px;bottom:-7px;background:#fffefa;border-right:1px solid #e1cbe8;border-bottom:1px solid #e1cbe8;transform:rotate(27deg)}
+.page-head:hover .merge-speech,.page-head.is-chatting .merge-speech{transform:translateY(-3px) rotate(0)}
+.merge-petal{position:absolute;z-index:1;width:12px;height:17px;border:1px solid #dfa9d0;border-radius:80% 16% 75% 15%;background:#ffcae0;pointer-events:none;opacity:0;bottom:-30px;animation:petal-rise 13s linear infinite}.merge-petal:nth-of-type(1){left:12%;animation-delay:-2s;--wind:60px}.merge-petal:nth-of-type(2){left:38%;animation-delay:-7s;--wind:-48px;background:#e5cefa}.merge-petal:nth-of-type(3){left:73%;animation-delay:-11s;--wind:35px}.merge-petal:nth-of-type(4){left:91%;animation-delay:-4s;--wind:-85px;background:#ffe8c9}@keyframes petal-rise{0%{opacity:0;transform:translate(0,0) rotate(0)}12%{opacity:.85}75%{opacity:.65}100%{opacity:0;transform:translate(var(--wind),-340px) rotate(240deg)}}
+.merge-journey{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;margin-bottom:18px}
+.journey-step{position:relative;display:flex;align-items:center;gap:11px;min-height:66px;padding:11px 15px;background:#fff;border:1px solid #e9dcef;border-radius:17px;box-shadow:var(--sh);transition:border-color .25s,transform .25s,background .25s}.journey-step:not(:last-child)::after{content:'→';position:absolute;z-index:2;right:-14px;top:50%;transform:translateY(-50%);width:24px;height:24px;display:grid;place-items:center;color:#a783bd;background:#fff;border:1px solid #e8dbee;border-radius:50%;font-size:15px}
+.journey-step .step-icon{flex:none;width:37px;height:37px;display:grid;place-items:center;background:#f4eafb;border-radius:12px;font-size:18px;transform:rotate(-7deg);transition:transform .3s}.journey-step:hover .step-icon{transform:rotate(9deg) scale(1.1)}
+.journey-step small{display:block;color:#aa81b1;font-size:10px;font-weight:800;letter-spacing:.13em}.journey-step strong{display:block;color:#5a5177;font-size:13px;line-height:1.25}.journey-step.done{background:#f7fcf9;border-color:#abd7c4}.journey-step.done .step-icon{background:#e4f5eb}.journey-step.done strong{color:#367454}.journey-step.ready{border-color:#efa8cb;background:#fff8fb;transform:translateY(-2px)}.journey-step.ready .step-icon{background:#ffe4f0}
+.subtabs{border-color:#eaddee;border-radius:17px;padding:5px;box-shadow:var(--sh);gap:5px;background:#fffdfa}
+.subtabs button{border-radius:12px;color:#776d8f;transition:background .18s,color .18s,transform .18s}.subtabs button:hover{background:#f8effb;color:#594478;transform:translateY(-1px)}.subtabs button.active,body.theme-post .subtabs button.active{background:linear-gradient(110deg,#a786d3,#876ab8);color:white;box-shadow:0 5px 14px #876ab83b}
+.card{border-radius:20px;border-color:#e8dded;box-shadow:0 9px 25px #6650820d;padding:24px;margin-bottom:17px;background:linear-gradient(155deg,#fff,#fff 70%,#fffcff)}
+.card-h{margin-bottom:18px}.card>h2,.card-h h2{font-size:17px;color:#3c366a}.card .sub2,.card .desc{color:#77708a}.card h3{color:#514875}
+span.num,.step{width:32px;height:32px;background:linear-gradient(135deg,#b18ddb,#8d69bd);border-radius:11px;box-shadow:0 5px 11px #9677b83b;flex:none}
+.cbadge,body.theme-post .cbadge{background:#f5ebfb;color:#895dad;border:1px solid #ead5f1;padding:4px 12px}body.theme-post .cbadge{background:#fff0f7;color:#c46290;border-color:#f6d8e8}
+.drop{position:relative;min-height:142px;padding:21px 20px 20px 78px;border:1.5px dashed #cdb4dc;border-radius:19px;background:linear-gradient(140deg,#fffafd,#fbf6ff);box-shadow:inset 0 1px 0 white;transition:border-color .25s,background .25s,transform .25s,box-shadow .25s}
+.drop::before{content:'✦';position:absolute;left:21px;top:23px;width:39px;height:39px;display:grid;place-items:center;background:#f5eafb;border:1px solid #ebd9f2;border-radius:13px;color:#a077c1;font-size:20px;transform:rotate(-7deg);transition:transform .3s,background .3s}
+#dropF::before{content:'📦'}#dropJ::before{content:'🧾'}#dropW::before{content:'📄'}
+.drop:hover,.drop.over{border-color:#ad7bd0;background:#f8efff;transform:translateY(-3px);box-shadow:0 12px 23px #8866ad1a}.drop:hover::before,.drop.over::before{transform:rotate(8deg) scale(1.08)}
+.drop.done,.drop.has{border-style:solid;border-color:#a9d9c4;background:linear-gradient(130deg,#f8fef9,#effaf4)}.drop.done::after,.drop.has::after{content:'✓';position:absolute;right:15px;top:13px;width:23px;height:23px;display:grid;place-items:center;border-radius:50%;background:#d8f3e5;color:#3e8461;font-size:13px;font-weight:800}
+.drop .t{color:#4a4074}.drop .d{word-break:break-word}.drop.done .d{color:#407f67}
+.btn{border-radius:11px;transition:transform .2s,box-shadow .2s,background .2s}.btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 7px 16px #60468527}.btn:disabled{background:#d8cedd!important;color:#fff!important}
+.btn.primary,.btn.go{background:linear-gradient(110deg,#f071b0,#e6539f);box-shadow:0 8px 18px #e6539f32}.btn.primary:hover,.btn.go:hover{background:linear-gradient(110deg,#ec69a9,#d93e91)}
+.btn.navy,.btn{background:#7961a8}.btn.navy:hover,.btn:hover{background:#685292}.btn.primary,.btn.go{background:linear-gradient(110deg,#f071b0,#e6539f)}.btn.primary:hover,.btn.go:hover{background:linear-gradient(110deg,#ec69a9,#d93e91)}
+.btn.gold{background:#488d71}.btn.gold:hover{background:#36785e}.btn.ghost,.btn.danger{background:#fff;color:#69547f;border-color:#e5d9ea}.btn.ghost:hover,.btn.danger:hover{background:#f9f1fc}
+input,select,textarea{border-color:#e0d5e6;border-radius:10px;background:#fff;color:#3c3657}input:focus,select:focus,textarea:focus{border-color:#b98cd6;box-shadow:0 0 0 3px #edddf8}label{color:#716783}
+.stats{gap:12px}.stat,.kpi{border-color:#ebdfed;border-radius:15px;background:#fff}.stat::before,.kpi::before{background:#9273bb}.stat .v,.kpi .n,.kpi .v{color:#483d78}
+.tbl-scroll{border-color:#e9deed;border-radius:15px}.tbl-scroll th{background:#f6effa;color:#594877;border-color:#eaddec}.tbl-scroll td{border-color:#f2eaf4}table tr:hover td{background:#fcf5ff}tr.tot td{background:#f8f1fa!important}tr.miss td{background:#fff4f8}
+.msg.info,.note{background:#f7f0ff;color:#665084;border-color:#e8d9f4}.msg.ok,.note.ok{background:#effaf3;color:#397652;border-color:#cbead6}.msg.warn,.note.warn-soft{background:#fff7ea;color:#946324;border-color:#f1dfbd}.msg.err,.note.warn{background:#fff0f6;color:#9c3d65;border-color:#f1ccdf}
+.modal{border:1px solid #e6d6ef;border-radius:21px}.modal h3{color:#44356e}.modal-bg{background:#33234e77}#loading,.loading{background:#fff8ffdf}.spinner{border-color:#eadcf2;border-top-color:#d46bab}.lmsg{color:#695487}
+.toast{background:#615080}.toast.ok{background:#397659}.toast.err{background:#9b4469}.toast.warn{background:#9a7342}
+.foot{color:#aa9bb1;margin-top:20px}
+/* Login shares the illustrated motif from the hub, while retaining the original form nodes. */
+.auth{background:radial-gradient(circle at 9% 16%,#9a8cc8,transparent 34%),radial-gradient(circle at 92% 89%,#a398cc,transparent 33%),#7774af;padding:20px;overflow:auto}
+.auth-stage{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(370px,.95fr);width:min(1170px,100%);min-height:min(720px,calc(100svh - 40px));background:#fffdfc;border:1px solid #e1cbee;border-radius:24px;box-shadow:0 30px 80px #3b2d6655;overflow:hidden;animation:auth-rise .6s ease-out both}@keyframes auth-rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.auth-art{position:relative;isolation:isolate;min-height:650px;overflow:hidden;background:radial-gradient(circle at 32% 25%,#fff 0 16%,transparent 16.2%),linear-gradient(150deg,#fffefd,#f9f2ff)}
+.auth-art::before{content:'';position:absolute;inset:0;background-image:linear-gradient(#e7daf0 1px,transparent 1px),linear-gradient(90deg,#e7daf0 1px,transparent 1px);background-size:47px 47px;opacity:.44;mask-image:linear-gradient(#000,transparent 80%)}
+.auth-art::after{content:'';position:absolute;left:-15%;right:-15%;bottom:-170px;height:260px;border-radius:50%;background:#f2e3fb}
+.auth-illustration{position:absolute;left:50%;top:42%;width:min(85%,500px);height:auto;transform:translate(-50%,-50%);filter:drop-shadow(0 16px 9px #765b9c26);animation:mascot-bob-auth 5s ease-in-out infinite}@keyframes mascot-bob-auth{50%{transform:translate(-50%,-53%) rotate(-1deg)}}
+.auth-art-copy{position:absolute;z-index:2;bottom:48px;left:9%;right:9%;text-align:center}.auth-art-copy small{display:block;color:#a377b1;letter-spacing:.18em;font-size:11px;font-weight:800}.auth-art-copy h1{font-family:Georgia,serif;color:#302b61;font-size:clamp(32px,4vw,54px);line-height:1.06;letter-spacing:-.04em;margin:7px 0}.auth-art-copy p{color:#776d8d;font-size:14px;margin:0}
+.auth-bubble{position:absolute;z-index:3;left:54%;top:9%;background:#fffefa;border:1px solid #e5d3eb;color:#80629c;border-radius:17px 17px 17px 4px;box-shadow:0 9px 20px #826aa127;font-size:12px;font-weight:700;padding:9px 13px;opacity:0;transform:translateY(7px);transition:opacity .25s,transform .25s;pointer-events:none}.auth-bubble::after{content:'';position:absolute;left:13px;bottom:-7px;width:12px;height:12px;background:#fffefa;border-left:1px solid #e5d3eb;border-bottom:1px solid #e5d3eb;transform:rotate(-34deg)}.auth-art:hover .auth-bubble,.auth.is-chatting .auth-bubble{opacity:1;transform:translateY(0)}
+.auth .auth-card{width:auto;max-width:none;border-radius:0;box-shadow:none;padding:50px clamp(30px,5vw,70px);display:flex;flex-direction:column;justify-content:center;background:linear-gradient(145deg,#fffefd,#fff9fd 72%,#f9f0ff)}
+.auth-card .alogo{width:max-content;background:#37335f;border-radius:13px;box-shadow:0 6px 15px #37335f21;padding:13px 17px}.auth-card .alogo img{height:27px}.auth-card h2{font-size:29px;color:#312b63;line-height:1.2;letter-spacing:-.035em;margin-bottom:7px}.auth-card .asub{font-size:14px;line-height:1.55;color:#7b728e;margin-bottom:25px}.auth-card .asub::before{content:'✿  ';color:#e974ad}
+.auth-card .fld{margin-bottom:15px}.auth-card label{font-size:13px;color:#5c5272}.auth-card input{height:49px;border-radius:12px}.auth-card .btn{margin-top:13px;height:52px}.auth-card .switch{font-size:14px;margin-top:21px;color:#7f748e}.auth-card .link{color:#d54d98;text-decoration:underline;text-decoration-color:#e9acd1;text-underline-offset:3px}.auth-card .msg{margin-top:12px}
+.auth-stamp{position:absolute;z-index:2;left:28px;top:28px;color:#a37cb4;background:#fffdfecf;padding:7px 12px;border:1px solid #ead9ef;border-radius:99px;font-size:11px;font-weight:800;letter-spacing:.1em;transform:rotate(-4deg)}
+@media(max-width:900px){.page-head{padding:30px;min-height:250px}.page-head>div:first-child,.page-head .actions{max-width:64%}.merge-hero-art{width:32%;right:1%}.merge-speech{right:3%;font-size:11px}.auth-stage{grid-template-columns:minmax(0,1fr) minmax(330px,.95fr)}.auth .auth-card{padding:38px 28px}}
+@media(max-width:700px){.mhead-in{gap:7px;padding:10px 14px}.mtitle{font-size:16px}.mtitle .logo{height:20px}.mright{width:auto;margin-left:auto;gap:5px}.mright .who{display:none}.mbtn{font-size:12px;padding:6px 9px}.page{padding:16px 12px 50px}.page-head{min-height:300px;padding:23px 23px 80px;border-radius:21px}.page-head>div:first-child,.page-head .actions{max-width:100%}.page-head h1{font-size:29px}.page-head p{max-width:86%;font-size:12.5px}.page-head .actions{margin-top:16px}.merge-hero-art{width:150px;right:-25px;bottom:-34px}.merge-speech{display:none}.merge-journey{grid-template-columns:1fr;gap:7px}.journey-step{min-height:52px}.journey-step:not(:last-child)::after{right:auto;left:28px;top:auto;bottom:-16px;content:'↓';transform:none;width:20px;height:20px;font-size:12px}.subtabs button{font-size:13px;padding:9px 12px}.card{padding:18px}.drop{padding:16px 15px 16px 64px;min-height:115px}.drop::before{left:15px;top:16px;width:36px;height:36px}.auth{padding:12px;align-items:flex-start}.auth-stage{display:flex;flex-direction:column;min-height:0;width:min(530px,100%);margin:auto}.auth-art{min-height:235px}.auth-illustration{width:225px;left:75%;top:44%}.auth-art-copy{text-align:left;left:22px;right:43%;bottom:22px}.auth-art-copy h1{font-size:27px}.auth-art-copy p{display:none}.auth-art-copy small{font-size:9px;letter-spacing:.08em}.auth .auth-card{padding:30px 27px 40px}.auth-bubble{top:8%;left:auto;right:3%;max-width:130px}.auth-stamp{display:none}}
+@media(max-width:420px){.page-head{min-height:330px;padding:22px 19px 95px}.page-head p{max-width:100%;padding-right:34px}.carrier-switch{width:100%;display:flex}.ctab{font-size:12px;padding:8px 9px;flex:1}.merge-hero-art{width:136px;right:-20px;bottom:-33px}.page-head .actions{width:100%;margin-top:16px}.mbrand{max-width:45%}.mtitle{font-size:14px;white-space:normal}.mtitle .logo{height:17px}.msub{display:none}.auth-art{min-height:205px}.auth-illustration{width:190px;left:76%;top:44%}.auth-art-copy h1{font-size:22px}.auth-art-copy small{font-size:8px}.auth .auth-card{padding:24px 21px 35px}.auth-card h2{font-size:25px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+/* Page-specific paper craft direction; avoids repeating the hub mascot. */
+.page-head{background:radial-gradient(circle at 69% 42%,#fff 0 12%,transparent 12.3%),radial-gradient(circle at 98% 0,#efe2fb 0 21%,transparent 21.3%),linear-gradient(112deg,#f5edff,#fffdfa 61%,#f8edfa)}
+.page-head::before,.auth-art::before{background-image:radial-gradient(#d7c4e7 1.15px,transparent 1.2px);background-size:22px 22px;opacity:.56}
+.page-head::after{content:'✂     ✧      ✦';font-size:18px;letter-spacing:29px;top:22px;right:11%;color:#c49aca}
+.merge-hero-art{right:1.5%;bottom:-12px;width:min(32%,370px);filter:drop-shadow(0 15px 9px #79619819);animation:folder-float 5.5s ease-in-out infinite}
+@keyframes folder-float{50%{transform:translateY(-7px) rotate(-1deg)}}
+.merge-speech{top:22px;right:5%;background:#fff7dd;border-color:#ead6a5;color:#876774;border-radius:8px;transform:rotate(3deg);box-shadow:3px 6px 14px #6651791c;padding:15px 16px 11px;max-width:190px}
+.merge-speech::after{display:none}.merge-speech::before{content:'';position:absolute;top:-9px;left:38%;width:53px;height:16px;background:#e6d4f0ae;transform:rotate(-8deg);border-radius:2px}
+.merge-petal{width:11px;height:15px;border-radius:2px;background:#eedcf9;border:1px solid #d1b6e4;animation-name:paper-float}
+.merge-petal:nth-of-type(2){background:#f8cde0;border-color:#eeb2cd}.merge-petal:nth-of-type(3){background:#fff0c7;border-color:#e6d4aa}.merge-petal:nth-of-type(4){background:#dff0e6;border-color:#b9d9c6}
+@keyframes paper-float{0%{opacity:0;transform:translate(0,0) rotate(0)}15%{opacity:.8}80%{opacity:.6}100%{opacity:0;transform:translate(var(--wind),-320px) rotate(315deg)}}
+.auth-art{background:radial-gradient(circle at 31% 20%,#fff 0 15%,transparent 15.3%),linear-gradient(150deg,#fffefd,#f9f3ff)}
+.auth-art::after{background:#efe2fb}
+.auth-bubble{background:#fff7dd;border-color:#ead6a5;border-radius:7px;color:#866c81;transform:rotate(-4deg) translateY(7px);box-shadow:4px 7px 14px #745a8d21;padding:14px 14px 10px;max-width:170px}
+.auth-bubble::before{content:'';position:absolute;width:48px;height:15px;top:-8px;left:35%;transform:rotate(8deg);background:#e7d5f0b8;border-radius:2px}
+.auth-bubble::after{display:none}.auth-art:hover .auth-bubble,.auth.is-chatting .auth-bubble{transform:rotate(-1deg) translateY(0)}
+.auth-stamp{background:#fff6dff0;border-color:#eedfbf;color:#9d7a9c}
+@media(max-width:900px){.merge-hero-art{width:33%;right:0}.merge-speech{right:3%}}
+@media(max-width:700px){.merge-hero-art{width:160px;right:-18px;bottom:-8px}.merge-speech{display:none}.auth-bubble{max-width:130px;padding:10px;font-size:11px}}
+@media(max-width:420px){.merge-hero-art{width:140px;right:-21px;bottom:-7px}}
+</style>
 </head>
 <body>
+<svg class="art-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="paperCream" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fffdfa"/><stop offset="1" stop-color="#fce8f2"/></linearGradient>
+    <linearGradient id="binderLilac" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#c7a4e7"/><stop offset="1" stop-color="#8e73bc"/></linearGradient>
+    <linearGradient id="folderPink" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffc4df"/><stop offset="1" stop-color="#ee8fbb"/></linearGradient>
+    <linearGradient id="mintPage" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#effaf1"/><stop offset="1" stop-color="#c8e8d8"/></linearGradient>
+  </defs>
+  <!-- A friendly notebook at a stationery desk: separate artwork for sign in. -->
+  <symbol id="merge-login-art" viewBox="0 0 600 520">
+    <ellipse cx="304" cy="472" rx="254" ry="20" fill="#9891c6" opacity=".23"/>
+    <path d="M119 439c-25-50-18-194 63-290 67-79 213-89 301-7 84 79 76 238 30 297z" fill="#f5e6ff"/>
+    <path d="M75 123l5 13 13 4-13 5-5 13-5-13-13-5 13-4zM512 83l4 12 12 4-12 4-4 12-4-12-12-4 12-4zM489 310l5 10 10 4-10 4-5 11-4-11-11-4 11-4z" fill="#fff1bc" stroke="#7967aa" stroke-width="2"/>
+    <circle cx="68" cy="318" r="5" fill="#cdb0ef"/><circle cx="533" cy="257" r="4" fill="#f8acd3"/><circle cx="164" cy="67" r="3" fill="#b2a0d7"/>
+    <!-- Tiny cheerful envelope -->
+    <g transform="translate(36 260) rotate(-11 102 82)">
+      <rect x="19" y="17" width="166" height="127" rx="15" fill="#e9c8e8" stroke="#655e99" stroke-width="3"/>
+      <rect x="26" y="25" width="152" height="108" rx="12" fill="#fffaf0" stroke="#655e99" stroke-width="3"/>
+      <path d="M26 34l75 59 77-59M26 124l55-48m97 48-55-48" fill="none" stroke="#d1bbd6" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M92 79c-10-13-26-2-17 10l26 23 25-23c10-13-7-23-17-10l-8 8z" fill="#ee86b9" stroke="#655e99" stroke-width="2.5"/>
+      <path d="M18 85q-25-4-25-24m190 30q24-8 27-25" fill="none" stroke="#655e99" stroke-width="3.5" stroke-linecap="round"/>
+      <circle cx="70" cy="124" r="3" fill="#655e99"/><circle cx="130" cy="124" r="3" fill="#655e99"/>
+    </g>
+    <!-- Notebook character -->
+    <g transform="translate(176 64) rotate(7 153 203)">
+      <path d="M58 53h239c21 0 36 17 36 37v301c0 21-16 38-37 38H62c-21 0-37-17-37-38V91c0-21 13-38 33-38z" fill="#716ba8" opacity=".27"/>
+      <rect x="20" y="27" width="303" height="394" rx="27" fill="url(#binderLilac)" stroke="#625b95" stroke-width="4"/>
+      <rect x="51" y="42" width="253" height="362" rx="18" fill="url(#paperCream)" stroke="#625b95" stroke-width="3"/>
+      <path d="M65 65v318" stroke="#dec9e7" stroke-width="2"/><path d="M68 114h221m-221 38h221m-221 38h221m-221 38h221m-221 38h221m-221 38h221m-221 38h221" stroke="#eee2ee" stroke-width="1.4"/>
+      <g fill="#f7e7b2" stroke="#625b95" stroke-width="2.5"><path d="M20 91h49v19H20z"/><path d="M20 176h49v19H20z"/><path d="M20 260h49v19H20z"/><path d="M20 344h49v19H20z"/></g>
+      <g stroke="#625b95" stroke-width="4" fill="none"><path d="M12 97c-19-11-17-31 0-41 18-10 36 3 36 22v29"/><path d="M12 182c-19-11-17-31 0-41 18-10 36 3 36 22v29"/><path d="M12 266c-19-11-17-31 0-41 18-10 36 3 36 22v29"/><path d="M12 350c-19-11-17-31 0-41 18-10 36 3 36 22v29"/></g>
+      <path d="M123 31c-17-24-38-12-36 3 2 16 22 19 36 12 18 11 41 2 41-15 0-18-25-24-41 0z" fill="#f18bb8" stroke="#625b95" stroke-width="3"/><circle cx="123" cy="40" r="7" fill="#fff0c4" stroke="#625b95" stroke-width="2"/>
+      <!-- Face -->
+      <ellipse cx="148" cy="182" rx="14" ry="10" fill="#ffc5dc"/><ellipse cx="260" cy="182" rx="14" ry="10" fill="#ffc5dc"/>
+      <ellipse cx="171" cy="166" rx="8" ry="10" fill="#383969"/><ellipse cx="238" cy="166" rx="8" ry="10" fill="#383969"/><circle cx="174" cy="162" r="2.3" fill="#fff"/><circle cx="241" cy="162" r="2.3" fill="#fff"/>
+      <path d="M195 180q9 14 18 0" stroke="#e05f99" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+      <path d="M120 235h164" stroke="#c9b2d9" stroke-width="2" stroke-dasharray="5 7"/>
+      <!-- File combination visual on notebook page -->
+      <rect x="104" y="271" width="61" height="58" rx="10" fill="#e9d7fa" stroke="#8570ad" stroke-width="2"/><path d="M117 284h34m-34 10h24m-24 10h28" stroke="#a586c7" stroke-width="3" stroke-linecap="round"/>
+      <rect x="240" y="271" width="50" height="58" rx="10" fill="#d9f0e4" stroke="#75a38d" stroke-width="2"/><path d="M250 284h29m-29 10h29m-29 10h29" stroke="#88b6a2" stroke-width="3" stroke-linecap="round"/>
+      <path d="M174 298h49m-11-10 11 10-11 10" stroke="#f18bb8" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M24 216q-43-17-45 13m342-23q43-16 49 12" stroke="#625b95" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <path d="M111 417q-17 34-36 31m203-31q17 34 36 31" stroke="#625b95" stroke-width="4" fill="none" stroke-linecap="round"/>
+    </g>
+    <!-- Pencil resting beside the notebook -->
+    <g transform="translate(489 223) rotate(22 20 106)">
+      <path d="M7 8h26v166l-13 31-13-31z" fill="#f4a5bb" stroke="#645d97" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M7 40h26m-26 123h26" stroke="#fff0d8" stroke-width="6"/><path d="M7 174l13 31 13-31" fill="#fff2d2" stroke="#645d97" stroke-width="2"/>
+      <path d="M16 196l4 9 4-9" fill="#55477e"/><rect x="7" y="-4" width="26" height="17" rx="7" fill="#f8e7b9" stroke="#645d97" stroke-width="3"/>
+    </g>
+    <path d="M58 422l5-10 5 10 11 4-11 4-5 11-5-11-11-4zM535 385l4-9 4 9 9 4-9 3-4 10-4-10-9-3z" fill="#e9c4f4" stroke="#7b6aa7" stroke-width="2"/>
+  </symbol>
+  <!-- Two input documents becoming one folder: independent artwork for the workspace. -->
+  <symbol id="merge-flow-art" viewBox="0 0 700 470">
+    <ellipse cx="358" cy="446" rx="305" ry="18" fill="#9691bf" opacity=".23"/>
+    <circle cx="357" cy="228" r="196" fill="#fbf0ff"/>
+    <path d="M101 42l5 13 13 4-13 5-5 13-5-13-13-5 13-4zM610 94l4 11 11 4-11 4-4 11-4-11-12-4 12-4zM560 346l4 10 10 3-10 4-4 10-4-10-10-4 10-3z" fill="#fff1bc" stroke="#71669e" stroke-width="2"/>
+    <circle cx="75" cy="330" r="4" fill="#f3aacc"/><circle cx="653" cy="266" r="5" fill="#c3a7df"/>
+    <!-- Shipping waybill -->
+    <g transform="translate(45 105) rotate(-11 100 130)">
+      <rect x="8" y="8" width="186" height="261" rx="17" fill="#cdb9e7" opacity=".58"/>
+      <path d="M12 0h150l30 30v223c0 12-10 21-22 21H32c-12 0-20-9-20-21z" fill="#fffefa" stroke="#655e98" stroke-width="3"/>
+      <path d="M162 0v29h30" fill="#ede1f6" stroke="#655e98" stroke-width="3"/>
+      <rect x="34" y="37" width="122" height="35" rx="9" fill="#edd9f8"/><text x="95" y="61" fill="#745c9d" text-anchor="middle" font-size="21" font-weight="700" font-family="sans-serif">FLASH</text>
+      <path d="M37 93h124m-124 15h89m-89 15h112" stroke="#d3c6df" stroke-width="6" stroke-linecap="round"/>
+      <path d="M39 169v52m8-52v52m6-52v52m12-52v52m7-52v52m5-52v52m12-52v52m7-52v52m14-52v52m6-52v52m7-52v52m12-52v52m7-52v52m10-52v52" stroke="#766693" stroke-width="3.6"/>
+      <circle cx="38" cy="251" r="3" fill="#f6a6cb"/><circle cx="155" cy="251" r="3" fill="#f6a6cb"/>
+    </g>
+    <!-- Spreadsheet -->
+    <g transform="translate(459 66) rotate(11 91 130)">
+      <rect x="8" y="8" width="187" height="258" rx="17" fill="#c1e1d0" opacity=".65"/>
+      <path d="M10 0h151l32 31v216c0 13-10 22-23 22H30c-12 0-20-9-20-21z" fill="#fffefa" stroke="#655e98" stroke-width="3"/>
+      <path d="M161 0v31h32" fill="#e3f2e9" stroke="#655e98" stroke-width="3"/>
+      <rect x="30" y="36" width="142" height="38" rx="9" fill="#ddf0e5"/><text x="101" y="63" fill="#588c71" text-anchor="middle" font-size="23" font-weight="700" font-family="sans-serif">JST</text>
+      <rect x="30" y="94" width="142" height="126" rx="5" fill="#fbfffc" stroke="#b5d9c8" stroke-width="2"/>
+      <path d="M30 122h142m-142 28h142m-142 28h142m-142 28h142M76 94v126m48-126v126" stroke="#b5d9c8" stroke-width="2"/>
+      <path d="M40 108h26m20 0h27m19 0h26M40 136h24m22 0h27m19 0h29M40 164h25m20 0h29m19 0h26" stroke="#9bc8b0" stroke-width="4" stroke-linecap="round"/>
+    </g>
+    <!-- Arrows drawn behind the finished file -->
+    <path d="M210 242q65-48 109-4m-19-22 19 22-26 10M488 214q-64-39-108 12m28-8-28 8 16 20" fill="none" stroke="#e78dbb" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="10 9"/>
+    <!-- Final folder -->
+    <g transform="translate(239 139)">
+      <path d="M24 42h109l28 27h152c13 0 22 10 22 22v193c0 16-13 28-29 28H28C12 312 0 300 0 284V67C0 52 10 42 24 42z" fill="url(#binderLilac)" stroke="#655e98" stroke-width="4"/>
+      <path d="M36 81h260v183H36z" fill="#fff9ed" stroke="#655e98" stroke-width="3"/>
+      <rect x="62" y="106" width="208" height="114" rx="9" fill="#fffdfb" stroke="#dfcfeb" stroke-width="2"/>
+      <path d="M82 130h126m-126 18h160m-160 18h116m-116 18h149" stroke="#e5dbea" stroke-width="6" stroke-linecap="round"/>
+      <path d="M21 112h294c18 0 31 14 28 32l-24 154c-2 16-15 27-31 27H23C7 325-3 312 1 296z" fill="url(#folderPink)" stroke="#655e98" stroke-width="4"/>
+      <path d="M36 133h271" stroke="#ffe8f4" stroke-width="4" opacity=".75"/>
+      <rect x="105" y="171" width="130" height="83" rx="14" fill="#fff9f7" stroke="#655e98" stroke-width="3" transform="rotate(-4 170 212)"/>
+      <path d="M129 192h82m-82 16h82m-82 16h58" stroke="#e8d6e5" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="258" cy="249" r="28" fill="#fff2c9" stroke="#655e98" stroke-width="3"/><path d="M248 249l8 8 15-18" stroke="#8772ae" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M32 278q132 31 283 0" fill="none" stroke="#ffdeed" stroke-width="4" opacity=".8"/>
+    </g>
+  </symbol>
+</svg>
 <main class="page">
   <div class="page-head">
     <div>
@@ -528,6 +722,14 @@ details.more summary{cursor:pointer;color:var(--blue);font-size:13.5px;font-weig
         <button class="ctab" data-carrier="post">📮 ไปรษณีย์ไทย</button>
       </div>
     </div>
+    <span class="merge-petal"></span><span class="merge-petal"></span><span class="merge-petal"></span><span class="merge-petal"></span>
+    <div class="merge-speech" id="mergeSpeech" aria-live="polite">ไฟล์สองทาง กำลังจะเป็นหนึ่งเดียว ✦</div>
+    <svg class="merge-hero-art" viewBox="0 0 700 470" aria-hidden="true"><use href="#merge-flow-art"/></svg>
+  </div>
+  <div class="merge-journey" id="mergeJourney" aria-label="ขั้นตอนการรวมไฟล์">
+    <div class="journey-step" id="journeyF"><span class="step-icon">📦</span><div><small>STEP 01</small><strong>ไฟล์จากขนส่ง</strong></div></div>
+    <div class="journey-step" id="journeyJ"><span class="step-icon">🧾</span><div><small>STEP 02</small><strong>ไฟล์จาก JST</strong></div></div>
+    <div class="journey-step" id="journeyR"><span class="step-icon">✨</span><div><small>STEP 03</small><strong>ไฟล์อัปโหลด admin</strong></div></div>
   </div>
 
   <div class="subtabs" id="mgTabs">
@@ -1537,6 +1739,52 @@ loadSnap();
 applyCarrier();
 TABS.go(TABS.initial);
 App.boot({page:'merge',subtitle:'รวมไฟล์ขนส่ง',onReady:function(){loadCfg();}});
+</script>
+<script>
+/* Decorative feedback mirrors the existing upload state; file handling stays in the original script. */
+(function(){
+  const byId=id=>document.getElementById(id);
+  const f=byId('dropF'),j=byId('dropJ'),result=byId('resultCard');
+  const speech=byId('mergeSpeech'),head=document.querySelector('.page-head');
+  let speechTimer;
+  function say(message){
+    speech.textContent=message;
+    head.classList.add('is-chatting');
+    clearTimeout(speechTimer);
+    speechTimer=setTimeout(()=>head.classList.remove('is-chatting'),1800);
+  }
+  function refresh(){
+    const hasF=f.classList.contains('done')||f.classList.contains('has');
+    const hasJ=j.classList.contains('done')||j.classList.contains('has');
+    const hasResult=!result.classList.contains('hide');
+    byId('journeyF').classList.toggle('done',hasF);
+    byId('journeyJ').classList.toggle('done',hasJ);
+    byId('journeyR').classList.toggle('ready',hasF&&hasJ&&!hasResult);
+    byId('journeyR').classList.toggle('done',hasResult);
+    byId('journeyF').querySelector('.step-icon').textContent=hasF?'✅':'📦';
+    byId('journeyJ').querySelector('.step-icon').textContent=hasJ?'✅':'🧾';
+    byId('journeyR').querySelector('.step-icon').textContent=hasResult?'🎉':'✨';
+    const post=document.body.classList.contains('theme-post');
+    const message=hasResult?'ไฟล์พร้อมแล้ว เก่งมากเลย ♡':
+      hasF&&hasJ?'ครบสองไฟล์แล้ว กดประมวลผลได้เลย ✦':
+      hasF?'ได้ไฟล์ขนส่งแล้ว เหลือไฟล์ JST นะ ♡':
+      hasJ?'ไฟล์ JST มาแล้ว รอไฟล์ขนส่งอีกนิด ✿':
+      post?'มาเตรียมไฟล์ไปรษณีย์กันนะ ♡':'มาเตรียมไฟล์ Flash กันนะ ♡';
+    if(speech.textContent!==message)say(message);
+  }
+  const observer=new MutationObserver(refresh);
+  [f,j,result,document.body].forEach(node=>observer.observe(node,{attributes:true,attributeFilter:['class']}));
+  refresh();
+  const auth=byId('authScreen'),bubble=byId('authSpeech');
+  if(auth&&bubble){
+    const prompts={au_email:'ขออีเมลของคุณหน่อยนะ ✉',au_pass:'รหัสผ่านเป็นความลับของเรานะ ♡',su_email:'ยินดีที่ได้รู้จักนะ ✿',su_pass:'ตั้งรหัสให้ปลอดภัยด้วยนะ ✦',su_inv:'รหัสเชิญอยู่กับหัวหน้างานนะ ♡'};
+    Object.keys(prompts).forEach(id=>{
+      const input=byId(id);if(!input)return;
+      input.addEventListener('focus',()=>{bubble.textContent=prompts[id];auth.classList.add('is-chatting');});
+      input.addEventListener('blur',()=>{bubble.textContent='มาจัดไฟล์ให้เป็นระเบียบกัน ♡';auth.classList.remove('is-chatting');});
+    });
+  }
+})();
 </script>
 </body>
 </html>
