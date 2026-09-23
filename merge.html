@@ -256,35 +256,14 @@
 
       <div style="margin-top:18px;padding-top:16px;border-top:1px dashed var(--line)">
         <div id="gsState" style="font-size:12.5px;color:var(--muted)"></div>
-        <details style="margin-top:8px">
-          <summary style="cursor:pointer;font-size:12.5px;color:var(--blue);font-weight:700;user-select:none">⚙️ ตั้งค่าแหล่งข้อมูล (เฉพาะผู้ดูแลระบบ)</summary>
-          <div class="row" style="margin-top:12px">
-            <div style="flex:1;min-width:280px">
-              <div style="font-size:12px;color:var(--muted);margin-bottom:4px">🔗 ลิงก์ Google Sheet API (ลงท้าย /exec)</div>
-              <input type="password" id="gsUrl" autocomplete="off" placeholder="วางลิงก์ที่ได้จาก Deploy"
-                     style="width:100%;max-width:none;padding:8px 10px;border:1px solid #d5dbe6;border-radius:8px;font-family:inherit;font-size:13px"></div>
-            <div style="min-width:190px">
-              <div style="font-size:12px;color:var(--muted);margin-bottom:4px">🔑 รหัสลับ</div>
-              <input type="password" id="gsToken" autocomplete="off" placeholder="รหัสลับจากไฟล์สคริปต์"
-                     style="width:100%;max-width:none;padding:8px 10px;border:1px solid #d5dbe6;border-radius:8px;font-family:inherit;font-size:13px"></div>
-            <button class="btn ghost sm" id="btnGsShow" style="align-self:flex-end">👁 แสดง</button>
-          </div>
-          <div class="msg warn" style="margin-top:10px;font-size:12px">
-            🔒 สองช่องนี้เก็บในฐานข้อมูล ไม่ได้ฝังในโค้ดหน้าเว็บ — คนที่ไม่ได้ล็อกอินอ่านไม่ได้<br>
-            กรอกครั้งเดียวแล้วกด "จำลิงก์ไว้ให้ทีม" ทุกคนในทีมใช้ได้เลย
-          </div>
-        </details>
       </div>
       <div class="row" style="margin-top:10px">
         <button class="btn gold" id="btnGsFull">📥 ดึงเข้ารายงานผู้บริหาร (ครบทุกช่อง)</button>
         <button class="btn" id="btnGsFetch">🔄 ดึงจาก Google Sheet</button>
-        <button class="btn ghost sm" id="btnGsSave">💾 จำลิงก์ไว้ให้ทีม</button>
-        <span class="badge" id="gsMsg"></span>
       </div>
       <div style="font-size:11.5px;color:var(--muted);margin-top:6px">
         <b>📥 ดึงเข้ารายงานผู้บริหาร</b> — ดึงครบทั้งวันที่รับฝาก ยอด COD ค่าขนส่ง และสถานะ เข้าระบบทีเดียว ไม่ต้องรวมไฟล์ก่อน<br>
-        <b>🔄 ดึงจาก Google Sheet</b> — ดึงเฉพาะสถานะ แล้วให้ตรวจก่อนอัปเดตเหมือนลากไฟล์<br>
-        ใส่ URL เดียวกันได้ทั้งสองแท็บขนส่ง ระบบส่งไปเองว่ากำลังดูขนส่งไหน
+        <b>🔄 ดึงจาก Google Sheet</b> — ดึงเฉพาะสถานะ แล้วให้ตรวจก่อนอัปเดตเหมือนลากไฟล์
       </div>
       <div class="row" style="margin-top:16px">
         <button class="btn go" id="btnStPrev" disabled>🔍 ตรวจก่อนอัปเดต</button>
@@ -898,6 +877,7 @@ async function delHistory(id){
 window.delHistory=delHistory;
 
 /* ===================== อัปเดตสถานะ (ไฟล์เดียว มีคอลัมน์สถานะ) ===================== */
+const GS={url:'https://script.google.com/macros/s/AKfycbxk9LKz7kgZPn2I0PI-BjIB5bNwGBxjdU8XDk6G6tA_T8hvv_sHRNalIzIw4vplINFq/exec',token:'MASARU-CS-2026'};
 const KW_DEF={del:'wallet,เซ็นรับ,นำจ่ายสำเร็จ,ส่งสำเร็จ,delivered,signed',
               ret:'return,ตีกลับ,ส่งคืน,คืนต้นทาง,นำจ่ายไม่สำเร็จ,undeliver'};
 let stF=null, stRows=null;
@@ -1042,8 +1022,8 @@ function jsonp(url,timeout){
 }
 /* ---------- ดึงจาก Google Sheet แบบแบ่งก้อน ---------- */
 function gsBase(){
-  const url=clean($('gsUrl').value), tok=clean($('gsToken').value);
-  if(!url)throw new Error('ยังไม่ได้ตั้งลิงก์ Google Sheet — กด "ตั้งค่าลิงก์" เพื่อกรอก');
+  const url=(C().gsUrl||GS.url), tok=(C().gsToken||GS.token);
+  if(!url)throw new Error('ยังไม่ได้ตั้งลิงก์ Google Sheet');
   return function(params){
     let u=url+(url.indexOf('?')>=0?'&':'?')+'token='+encodeURIComponent(tok)+'&src='+encodeURIComponent(carrier);
     for(const k in params)u+='&'+k+'='+encodeURIComponent(params[k]);
@@ -1346,14 +1326,7 @@ function applyCarrier(){
   if($('nameW'))$('nameW').textContent='ยังไม่ได้เลือกไฟล์';
   if($('dropW'))$('dropW').classList.remove('done');
   $('stMsg').innerHTML='';$('stPrev').innerHTML='';
-  $('gsUrl').value=C().gsUrl||'';
-  $('gsToken').value=C().gsToken||'';
-  $('gsMsg').textContent='';
-  const gsReady=!!(C().gsUrl&&C().gsToken);
-  $('gsState').innerHTML=gsReady
-    ?'🔗 เชื่อมกับ Google Sheet แล้ว — กดปุ่มด้านบนได้เลย'
-    :'<span style="color:var(--warn)">⚠️ ยังไม่ได้ตั้งค่าแหล่งข้อมูล — เปิดหัวข้อด้านล่างเพื่อกรอกลิงก์</span>';
-  $('btnGsFull').disabled=!gsReady;$('btnGsFetch').disabled=!gsReady;
+  $('gsState').innerHTML='🔗 เชื่อมกับ Google Sheet ของ'+meta.label+' แล้ว — กดปุ่มด้านบนได้เลย';
   if(!$('kwDel').value)$('kwDel').value=KW_DEF.del;
   if(!$('kwRet').value)$('kwRet').value=KW_DEF.ret;
   stRefreshCols();
@@ -1421,20 +1394,8 @@ $('wHdr').onchange=stRefreshCols;
 $('btnStPrev').onclick=stPreview;
 $('btnStGo').onclick=stApply;
 $('btnStSum').onclick=stSummary;
-$('btnGsShow').onclick=function(){
-  const on=$('gsUrl').type==='password';
-  $('gsUrl').type=$('gsToken').type=on?'text':'password';
-  this.textContent=on?'🙈 ซ่อน':'👁 แสดง';
-};
 $('btnGsFetch').onclick=gsFetch;
 $('btnGsFull').onclick=gsFull;
-$('btnGsSave').onclick=async function(){
-  C().gsUrl=clean($('gsUrl').value);
-  C().gsToken=clean($('gsToken').value);
-  cacheLocal();await saveCfg();
-  $('gsMsg').textContent='บันทึกแล้ว';
-  applyCarrier();
-};
 $('btnStClear').onclick=function(){
   stF=null;stRows=null;
   $('nameW').textContent='ยังไม่ได้เลือกไฟล์';$('dropW').classList.remove('done');
