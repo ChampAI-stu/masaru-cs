@@ -1371,7 +1371,7 @@ async function gsAll(mode,onProgress){
       await new Promise(function(r){setTimeout(r,1500*t);});
     }
   }
-  if(!m||!m.ok){console.error('GS meta',m);throw new Error('ดึงรายการไฟล์จาก Google Sheet ไม่สำเร็จ — ลองใหม่อีกครั้ง');}
+  if(!m||!m.ok){console.error('[MASARU CS] GS meta',m);throw new Error('Google Sheet ตอบกลับว่า: '+((m&&m.error)||'ดึงรายการไฟล์ไม่สำเร็จ')+' — แจ้งผู้ดูแลระบบ');}
   let lim=Math.min(6000,Number(m.chunk_max)||6000);
   console.info('[MASARU CS] Google Sheet meta',m);
   const allFiles=Array.isArray(m.files)?m.files:[];
@@ -1399,7 +1399,7 @@ async function gsAll(mode,onProgress){
           await new Promise(function(r){setTimeout(r,1500*t);});
         }
       }
-      if(!d||!d.ok){console.error('GS data',d);throw new Error('ดึงข้อมูลจาก Google Sheet ไม่สำเร็จ — ลองใหม่อีกครั้ง');}
+      if(!d||!d.ok){console.error('[MASARU CS] GS data',d);throw new Error('Google Sheet ตอบกลับว่า: '+((d&&d.error)||'ดึงข้อมูลไม่สำเร็จ')+' — แจ้งผู้ดูแลระบบ');}
       (d.rows||[]).forEach(function(r){
         if(r&&!Array.isArray(r)&&typeof r==='object')r=Object.values(r);
         const k=clean(r&&r[0]);
