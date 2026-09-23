@@ -254,6 +254,27 @@
       </div>
       <div style="font-size:11.5px;color:var(--muted);margin-top:6px">คั่นด้วยจุลภาค · ไม่ต้องพิมพ์ทั้งประโยค ใส่แค่คำที่มีอยู่ในข้อความก็พอ · ที่ไม่เข้าทั้งสองกลุ่ม = ระหว่างการติดตาม</div>
 
+      <div class="row" style="margin-top:18px;padding-top:16px;border-top:1px dashed var(--line)">
+        <div style="flex:1;min-width:280px">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:4px">🔗 ลิงก์ Google Sheet API (ลงท้าย /exec)</div>
+          <input type="text" id="gsUrl" placeholder="https://script.google.com/macros/s/.../exec"
+                 style="width:100%;max-width:none;padding:8px 10px;border:1px solid #d5dbe6;border-radius:8px;font-family:inherit;font-size:13px"></div>
+        <div style="min-width:190px">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:4px">🔑 รหัสลับ</div>
+          <input type="text" id="gsToken" placeholder="MASARU-CS-2026"
+                 style="width:100%;max-width:none;padding:8px 10px;border:1px solid #d5dbe6;border-radius:8px;font-family:inherit;font-size:13px"></div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn gold" id="btnGsFull">📥 ดึงเข้ารายงานผู้บริหาร (ครบทุกช่อง)</button>
+        <button class="btn" id="btnGsFetch">🔄 ดึงจาก Google Sheet</button>
+        <button class="btn ghost sm" id="btnGsSave">💾 จำลิงก์ไว้ให้ทีม</button>
+        <span class="badge" id="gsMsg"></span>
+      </div>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:6px">
+        <b>📥 ดึงเข้ารายงานผู้บริหาร</b> — ดึงครบทั้งวันที่รับฝาก ยอด COD ค่าขนส่ง และสถานะ เข้าระบบทีเดียว ไม่ต้องรวมไฟล์ก่อน<br>
+        <b>🔄 ดึงจาก Google Sheet</b> — ดึงเฉพาะสถานะ แล้วให้ตรวจก่อนอัปเดตเหมือนลากไฟล์<br>
+        ใส่ URL เดียวกันได้ทั้งสองแท็บขนส่ง ระบบส่งไปเองว่ากำลังดูขนส่งไหน
+      </div>
       <div class="row" style="margin-top:16px">
         <button class="btn go" id="btnStPrev" disabled>🔍 ตรวจก่อนอัปเดต</button>
         <button class="btn gold" id="btnStGo" disabled>⬆ อัปเดตสถานะ</button>
@@ -990,6 +1011,111 @@ async function stApply(){
   }catch(e){note('stMsg','err','❌ อัปเดตไม่สำเร็จ: '+esc(e.message||e));}
   finally{btn.textContent=t0;btn.disabled=false;}
 }
+/* ---------- ดึงสถานะจาก Google Sheet ---------- */
+function jsonp(url,timeout){
+  return new Promise(function(res,rej){
+    const cb='__gs'+Date.now();
+    const sc=document.createElement('script');
+    const done=function(ok,v){
+      try{delete window[cb];}catch(e){window[cb]=undefined;}
+      if(sc.parentNode)sc.parentNode.removeChild(sc);
+      clearTimeout(tm);
+      ok?res(v):rej(v);
+    };
+    const tm=setTimeout(function(){done(false,new Error('หมดเวลารอ — ตรวจลิงก์และสิทธิ์การเข้าถึงของ Web app'));},timeout||60000);
+    window[cb]=function(v){done(true,v);};
+    sc.onerror=function(){done(false,new Error('เรียกลิงก์ไม่สำเร็จ — ตรวจว่า Deploy เป็น Web app และตั้ง Who has access = Anyone'));};
+    sc.src=url+(url.indexOf('?')>=0?'&':'?')+'callback='+cb;
+    document.body.appendChild(sc);
+  });
+}
+async function gsFetch(){
+  const url=clean($('gsUrl').value), tok=clean($('gsToken').value);
+  if(!url){note('stMsg','err','ใส่ลิงก์ Google Sheet ก่อนครับ');return;}
+  const btn=$('btnGsFetch');btn.disabled=true;const t0=btn.textContent;btn.textContent='กำลังดึง...';
+  note('stMsg','info','⏳ กำลังดึงข้อมูลจาก Google Sheet...');
+  try{
+    const full=url+(url.indexOf('?')>=0?'&':'?')+'token='+encodeURIComponent(tok)+'&src='+encodeURIComponent(carrier);
+    const d=await jsonp(full,90000);
+    if(!d||!d.ok)throw new Error((d&&d.error)||'ดึงข้อมูลไม่สำเร็จ');
+    if(!d.rows||!d.rows.length)throw new Error('ชีทไม่มีข้อมูล');
+    const cols=d.cols||['Tracking No.','สถานะ'];
+    stF={name:'Google Sheet · '+(d.fetched_at||''),raw:[cols].concat(d.rows)};
+    $('wHdr').value=1;
+    $('nameW').textContent='Google Sheet · '+d.count.toLocaleString()+' แถว · ดึงเมื่อ '+(d.fetched_at||'-');
+    $('dropW').classList.add('done');
+    stRefreshCols();
+    const src=(d.sources||[]).map(function(x){return esc(x.name)+' ('+(x.rows||0).toLocaleString()+')';}).join(' · ');
+    note('stMsg','ok','✅ ดึงมาแล้ว '+d.count.toLocaleString()+' แถว · '+esc(d.carrier||CARRIERS[carrier].label)+(src?'<br><span style="font-size:12px">จากไฟล์: '+src+'</span>':''));
+    stPreview();
+  }catch(e){note('stMsg','err','❌ '+esc(e.message||e));}
+  finally{btn.textContent=t0;btn.disabled=false;}
+}
+/* ---------- ดึงข้อมูลเต็มจาก Google Sheet → เข้ารายงานผู้บริหารเลย ---------- */
+async function gsFull(){
+  const url=clean($('gsUrl').value), tok=clean($('gsToken').value);
+  if(!url){note('stMsg','err','ใส่ลิงก์ Google Sheet ก่อนครับ');return;}
+  const c=sbClient();
+  if(!c){note('stMsg','err','เชื่อมฐานข้อมูลไม่ได้');return;}
+  const btn=$('btnGsFull');btn.disabled=true;const t0=btn.textContent;
+  try{
+    btn.textContent='กำลังดึง...';
+    note('stMsg','info','⏳ กำลังดึงข้อมูลเต็มจาก Google Sheet (ข้อมูลเยอะ อาจใช้เวลาสักครู่)...');
+    const full=url+(url.indexOf('?')>=0?'&':'?')+'token='+encodeURIComponent(tok)+
+               '&src='+encodeURIComponent(carrier)+'&mode=full';
+    const d=await jsonp(full,180000);
+    if(!d||!d.ok)throw new Error((d&&d.error)||'ดึงข้อมูลไม่สำเร็จ');
+    if(!d.rows||!d.rows.length)throw new Error('ชีทไม่มีข้อมูล');
+
+    /* 1) เขียนพัสดุเข้าระบบ */
+    const parcels=[],marks={delivered:[],returned:[],transit:[]};
+    let noDate=0;
+    d.rows.forEach(function(r){
+      const trk=clean(r[0]);if(!trk)return;
+      const sd=clean(r[3]);
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(sd))noDate++;
+      parcels.push({tracking:trk,carrier:carrier,
+                    ship_date:/^\d{4}-\d{2}-\d{2}$/.test(sd)?sd:null,
+                    order_no:clean(r[2]),cod:Number(r[4])||0,fee:Number(r[5])||0});
+      let st=classify(r[1]);
+      if(st!=='returned'&&clean(r[6]))st='returned';   // มีเลขพัสดุตีกลับ = ตีกลับ
+      marks[st].push(trk);
+    });
+
+    let up=0;
+    for(let i=0;i<parcels.length;i+=500){
+      btn.textContent='บันทึกพัสดุ '+Math.min(i+500,parcels.length).toLocaleString()+'/'+parcels.length.toLocaleString()+'...';
+      const r2=await c.rpc('bulk_parcel_upsert',{p:parcels.slice(i,i+500)});
+      if(r2.error)throw r2.error;
+      up+=Number(r2.data)||0;
+    }
+
+    /* 2) ติดสถานะ */
+    const lbl={delivered:['เซ็นรับ (จาก Google Sheet)','เซ็นรับ'],
+               returned :['ตีกลับ (จาก Google Sheet)','ตีกลับ'],
+               transit  :['ระหว่างการติดตาม','ระหว่างติดตาม']};
+    const hit={delivered:0,returned:0,transit:0};
+    for(const k in marks){
+      const list=marks[k];
+      for(let i=0;i<list.length;i+=500){
+        btn.textContent='ติดสถานะ '+lbl[k][1]+' '+Math.min(i+500,list.length).toLocaleString()+'/'+list.length.toLocaleString()+'...';
+        const r3=await c.rpc('bulk_parcel_mark',{p:list.slice(i,i+500).map(function(x){return {k:x};}),
+                                                p_state:k,p_status:lbl[k][0]});
+        if(r3.error)throw r3.error;
+        hit[k]+=Number(r3.data)||0;
+      }
+    }
+
+    const src=(d.sources||[]).map(function(x){return esc(x.name)+' ('+(x.rows||0).toLocaleString()+')';}).join(' · ');
+    note('stMsg',noDate?'warn':'ok',
+      '✅ ดึงเข้ารายงานแล้ว '+up.toLocaleString()+' ชิ้น · เซ็นรับ '+hit.delivered.toLocaleString()+
+      ' · ตีกลับ '+hit.returned.toLocaleString()+' · ระหว่างติดตาม '+hit.transit.toLocaleString()+
+      (noDate?'<br><span style="font-size:12px">⚠️ '+noDate.toLocaleString()+' ชิ้นไม่มีวันที่รับฝาก จะไม่ถูกนับเข้าเดือนไหน</span>':'')+
+      (src?'<br><span style="font-size:12px">จากไฟล์: '+src+'</span>':''));
+    stSummary();
+  }catch(e){note('stMsg','err','❌ '+esc(e.message||e));}
+  finally{btn.textContent=t0;btn.disabled=false;}
+}
 async function stSummary(){
   const c=sbClient();
   if(!c){$('stSum').innerHTML='<div class="msg err">เชื่อมฐานข้อมูลไม่ได้</div>';return;}
@@ -1184,6 +1310,9 @@ function applyCarrier(){
   if($('nameW'))$('nameW').textContent='ยังไม่ได้เลือกไฟล์';
   if($('dropW'))$('dropW').classList.remove('done');
   $('stMsg').innerHTML='';$('stPrev').innerHTML='';
+  $('gsUrl').value=C().gsUrl||'';
+  $('gsToken').value=C().gsToken||'';
+  $('gsMsg').textContent='';
   if(!$('kwDel').value)$('kwDel').value=KW_DEF.del;
   if(!$('kwRet').value)$('kwRet').value=KW_DEF.ret;
   stRefreshCols();
@@ -1251,6 +1380,14 @@ $('wHdr').onchange=stRefreshCols;
 $('btnStPrev').onclick=stPreview;
 $('btnStGo').onclick=stApply;
 $('btnStSum').onclick=stSummary;
+$('btnGsFetch').onclick=gsFetch;
+$('btnGsFull').onclick=gsFull;
+$('btnGsSave').onclick=async function(){
+  C().gsUrl=clean($('gsUrl').value);
+  C().gsToken=clean($('gsToken').value);
+  cacheLocal();await saveCfg();
+  $('gsMsg').textContent='บันทึกแล้ว';
+};
 $('btnStClear').onclick=function(){
   stF=null;stRows=null;
   $('nameW').textContent='ยังไม่ได้เลือกไฟล์';$('dropW').classList.remove('done');
