@@ -510,30 +510,9 @@ details.more summary{cursor:pointer;color:var(--blue);font-size:13.5px;font-weig
   body.theme-post .cbadge{background:#FDECEC}
   tr.miss td{background:#FFF4F4}
   #tbl td,#hvTbl td{max-width:320px;overflow:hidden;text-overflow:ellipsis}
-  .src-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
-  .src{border:1px solid var(--line);border-radius:14px;padding:16px;background:#FAFCFF}
-  .src h4{margin:0 0 4px;font-size:14.5px;color:var(--navy)}
-  .src p{margin:0 0 12px;font-size:13px;color:var(--muted)}
-  .src .btn{width:100%;margin-top:6px}
   .or{display:flex;align-items:center;gap:10px;color:var(--faint);font-size:12px;margin:14px 0}
   .or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
   #stDetect{font-size:13px;color:var(--muted);margin-top:8px}
-  /* แถบความคืบหน้าดึง Google Sheet */
-  #gsProg{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px}
-  .gs-steps{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
-  .gs-steps span{font-size:12px;font-weight:700;padding:3px 10px;border-radius:20px;background:var(--line-2);color:var(--faint)}
-  .gs-steps span.on{background:var(--hd1);color:#fff}
-  .gs-steps span.done{background:var(--ok-bg);color:var(--ok)}
-  .gs-head{display:flex;justify-content:space-between;gap:10px;align-items:baseline;font-size:13px;margin-bottom:6px}
-  .gs-head b{color:var(--hd1)}.gs-head span{color:var(--muted);white-space:nowrap}
-  .gs-bar{height:12px;border-radius:7px;background:#eef1f6;overflow:hidden;position:relative}
-  .gs-bar i{display:block;height:100%;border-radius:7px;background:linear-gradient(90deg,var(--accent),var(--hd1));transition:width .3s}
-  .gs-bar.ind i{position:absolute;animation:gsind 1.3s ease-in-out infinite}
-  @keyframes gsind{0%{left:-35%}100%{left:100%}}
-  .gs-sub{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--muted);margin-top:6px}
-  .btn.busy:disabled{background:var(--navy)!important;color:#fff!important;cursor:progress;opacity:.95}
-  .btn.ghost.busy:disabled{background:#fff!important;color:var(--navy)!important;border-color:#CFD7E3!important}
-  .bspin{width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;display:inline-block;animation:spin .7s linear infinite}
 </style>
 </head>
 <body>
@@ -606,25 +585,13 @@ details.more summary{cursor:pointer;color:var(--blue);font-size:13.5px;font-weig
       <div class="card-h"><div class="grow"><h2>🔄 อัปเดตสถานะปลายทาง <span class="cbadge" id="curCarrier3"></span></h2>
         <p class="desc">ติดสถานะ เซ็นรับ / ตีกลับ ให้พัสดุที่บันทึกไว้แล้ว เพื่อให้รายงานผู้บริหารครบ</p></div></div>
 
-      <div class="src-grid">
-        <div class="src">
-          <h4>ทางเลือก A · ดึงจาก Google Sheet <span class="badge ok">แนะนำ</span></h4>
-          <p id="gsState">เชื่อมกับ Google Sheet ของขนส่งแล้ว</p>
-          <button class="btn gold" id="btnGsFull">📥 ดึงข้อมูลเข้ารายงาน (ครบทุกช่อง)</button>
-          <button class="btn ghost" id="btnGsFetch">🔄 ดึงเฉพาะสถานะ แล้วตรวจก่อน</button>
-          <div id="gsProg" class="hide" style="margin-top:12px"></div>
-        </div>
-        <div class="src">
-          <h4>ทางเลือก B · อัปไฟล์สถานะจากขนส่ง</h4>
-          <p>ไฟล์ที่มีเลขพัสดุ + สถานะ (ระบบอ่านคอลัมน์ให้เอง)</p>
-          <div class="drop" id="dropW" style="min-height:86px">
-            <div class="t">📄 ไฟล์สถานะ</div>
-            <div class="d" id="nameW">ยังไม่ได้เลือกไฟล์</div>
-          </div>
-          <input type="file" id="filePickS" accept=".xlsx,.xls" class="hide">
-          <div id="stDetect"></div>
-        </div>
+      <div class="drop" id="dropW" style="min-height:96px;max-width:640px">
+        <div class="t">📄 ไฟล์สถานะจากขนส่ง</div>
+        <div class="d" id="nameW">ยังไม่ได้เลือกไฟล์</div>
+        <div class="cols">ลากไฟล์มาวาง หรือคลิกเพื่อเลือก · ไฟล์ที่มีเลขพัสดุ + สถานะ (ระบบอ่านคอลัมน์ให้เอง)</div>
       </div>
+      <input type="file" id="filePickS" accept=".xlsx,.xls" class="hide">
+      <div id="stDetect"></div>
 
       <div id="stMsg" style="margin-top:12px"></div>
       <div class="row" style="margin-top:12px">
@@ -1165,7 +1132,6 @@ async function delHistory(id){
 window.delHistory=delHistory;
 
 /* ===================== อัปเดตสถานะ (ไฟล์เดียว มีคอลัมน์สถานะ) ===================== */
-const GS={url:'https://script.google.com/macros/s/AKfycbxk9LKz7kgZPn2I0PI-BjIB5bNwGBxjdU8XDk6G6tA_T8hvv_sHRNalIzIw4vplINFq/exec',token:'MASARU-CS-2026'};
 const KW_DEF={del:'wallet,เซ็นรับ,นำจ่ายสำเร็จ,ส่งสำเร็จ,delivered,signed',
               ret:'return,ตีกลับ,ส่งคืน,คืนต้นทาง,นำจ่ายไม่สำเร็จ,undeliver'};
 let stF=null, stRows=null;
@@ -1187,9 +1153,11 @@ function stOpts(sel,want,allowNone){
   const hs=stHeaders();
   if(!hs.length){$(sel).innerHTML='<option value="">—</option>';return;}
   let pick=allowNone?'':hs[0][0];
-  for(let i=0;i<hs.length;i++){
-    const n=(hs[i][1]||'').toLowerCase();
-    if(want.some(function(w){return n.indexOf(w)>=0;})){pick=hs[i][0];break;}
+  /* เลือกตามลำดับคำที่ต้องการ (เช่น ให้ "tracking" มาก่อน "order") */
+  outer:for(let w=0;w<want.length;w++){
+    for(let i=0;i<hs.length;i++){
+      if((hs[i][1]||'').toLowerCase().indexOf(want[w])>=0){pick=hs[i][0];break outer;}
+    }
   }
   let h=allowNone?'<option value="">— ไม่มี (ทั้งไฟล์คือเซ็นรับ) —</option>':'';
   h+=hs.map(function(p){
@@ -1292,217 +1260,6 @@ async function stApply(){
     stSummary();
   }catch(e){note('stMsg','err','❌ อัปเดตไม่สำเร็จ — '+esc(App.errText(e,'stApply')));}
   finally{btn.textContent=t0;btn.disabled=false;}
-}
-/* ---------- ดึงสถานะจาก Google Sheet ---------- */
-function jsonp(url,timeout){
-  return new Promise(function(res,rej){
-    const cb='__gs'+Date.now();
-    const sc=document.createElement('script');
-    const done=function(ok,v){
-      try{delete window[cb];}catch(e){window[cb]=undefined;}
-      if(sc.parentNode)sc.parentNode.removeChild(sc);
-      clearTimeout(tm);
-      ok?res(v):rej(v);
-    };
-    const tm=setTimeout(function(){done(false,new Error('Google Sheet ตอบช้าเกินไป — ลองใหม่อีกครั้ง'));},timeout||60000);
-    window[cb]=function(v){done(true,v);};
-    sc.onerror=function(){done(false,new Error('เชื่อมต่อ Google Sheet ไม่ได้ — ลองใหม่ หากยังไม่ได้ให้แจ้งผู้ดูแลระบบ'));};
-    sc.src=url+(url.indexOf('?')>=0?'&':'?')+'callback='+cb;
-    document.body.appendChild(sc);
-  });
-}
-/* ---------- แถบความคืบหน้า ----------
-   step = {n:ขั้นที่, of:จำนวนขั้น} · total<=0 = ยังไม่รู้จำนวน → แถบวิ่ง */
-let gsT0=0, gsTick=null, gsLast=null;
-function gsElapsed(){
-  const s=Math.max(0,Math.round((Date.now()-gsT0)/1000));
-  return (s>=60?Math.floor(s/60)+' นาที ':'')+(s%60)+' วินาที';
-}
-function gsStart(btn,txt){
-  gsT0=Date.now();
-  ['btnGsFull','btnGsFetch','btnStPrev','btnStGo'].forEach(function(id){if($(id))$(id).disabled=true;});
-  btn.classList.add('busy');btn.innerHTML='<span class="bspin"></span>'+esc(txt);
-  $('stMsg').innerHTML='';
-  clearInterval(gsTick);gsTick=setInterval(function(){if(gsLast)gsRender();},1000);
-}
-function gsStop(btn,t0){
-  clearInterval(gsTick);gsTick=null;gsLast=null;
-  btn.classList.remove('busy');btn.textContent=t0;
-  ['btnGsFull','btnGsFetch'].forEach(function(id){if($(id))$(id).disabled=false;});
-  $('btnStPrev').disabled=!stF;$('btnStGo').disabled=!(stRows&&stRows.length);
-  gsProgDone();
-}
-function gsProg(done,total,label,sub,step){gsLast={done:done,total:total,label:label,sub:sub,step:step};gsRender();}
-function gsRender(){
-  const el=$('gsProg');if(!el||!gsLast)return;
-  const g=gsLast, known=g.total>0;
-  const p=known?Math.min(100,Math.round(g.done/g.total*100)):0;
-  el.classList.remove('hide');
-  el.innerHTML=
-    (g.step?'<div class="gs-steps">'+[1,2,3].slice(0,g.step.of).map(function(i){
-      return '<span class="'+(i<g.step.n?'done':i===g.step.n?'on':'')+'">'+(i<g.step.n?'✓ ':'')+(g.step.names?g.step.names[i-1]:'ขั้นที่ '+i)+'</span>';}).join('')+'</div>':'')+
-    '<div class="gs-head"><b>'+esc(g.label||'กำลังทำงาน')+'</b>'+
-      '<span>'+(known?g.done.toLocaleString()+' / '+g.total.toLocaleString()+' · <b>'+p+'%</b>':(g.done?g.done.toLocaleString()+' แถว':'กำลังเตรียม...'))+'</span></div>'+
-    '<div class="gs-bar'+(known?'':' ind')+'"><i style="width:'+(known?p:35)+'%"></i></div>'+
-    '<div class="gs-sub"><span>'+esc(g.sub||'')+'</span><span>ใช้เวลาแล้ว '+gsElapsed()+'</span></div>';
-}
-function gsProgDone(){const el=$('gsProg');if(el){el.classList.add('hide');el.innerHTML='';}}
-
-/* ---------- ดึงจาก Google Sheet แบบแบ่งก้อน ---------- */
-function gsBase(){
-  const url=(C().gsUrl||GS.url), tok=(C().gsToken||GS.token);
-  if(!url)throw new Error('ขนส่งนี้ยังไม่ได้เชื่อม Google Sheet — แจ้งผู้ดูแลระบบ');
-  return function(params){
-    let u=url+(url.indexOf('?')>=0?'&':'?')+'token='+encodeURIComponent(tok)+'&src='+encodeURIComponent(carrier);
-    for(const k in params)u+='&'+k+'='+encodeURIComponent(params[k]);
-    return u;
-  };
-}
-async function gsAll(mode,onProgress){
-  const mk=gsBase();
-  onProgress&&onProgress(0,0,'กำลังเชื่อมต่อ Google Sheet และนับจำนวนไฟล์...');
-  let m=null;
-  for(let t=1;t<=3&&!m;t++){
-    try{m=await jsonp(mk({mode:'meta'}),90000);}
-    catch(e){
-      console.warn('[MASARU CS] GS meta ครั้งที่ '+t+' ไม่สำเร็จ',e);
-      if(t===3)throw new Error('เชื่อมต่อ Google Sheet ไม่ได้ (ขั้นดูรายการไฟล์ ลอง 3 ครั้งแล้ว) — แจ้งผู้ดูแลระบบให้ตรวจการเผยแพร่ Apps Script');
-      onProgress&&onProgress(0,0,'เชื่อมต่อไม่สำเร็จ กำลังลองใหม่ครั้งที่ '+(t+1)+'...');
-      await new Promise(function(r){setTimeout(r,1500*t);});
-    }
-  }
-  if(!m||!m.ok){console.error('[MASARU CS] GS meta',m);throw new Error('Google Sheet ตอบกลับว่า: '+((m&&m.error)||'ดึงรายการไฟล์ไม่สำเร็จ')+' — แจ้งผู้ดูแลระบบ');}
-  /* เริ่มก้อนเล็กก่อน แล้วปรับตามความเร็วจริงของชีท (เร็ว→ขยาย · ช้า→ลด) */
-  const cap=Math.min(6000,Number(m.chunk_max)||6000);
-  let lim=Math.min(1500,cap);
-  console.info('[MASARU CS] Google Sheet meta',m);
-  const allFiles=Array.isArray(m.files)?m.files:[];
-  /* ข้ามเฉพาะไฟล์ที่บอกชัดว่า 0 แถว — ถ้าไม่ได้บอกจำนวนแถวมา ให้ลองดึงดู */
-  const files=allFiles.filter(function(f){return f&&(f.rows==null||Number(f.rows)>0);});
-  if(!allFiles.length)throw new Error('Google Sheet ของ '+CARRIERS[carrier].label+' ยังไม่มีไฟล์ให้ดึง — ตรวจว่ามีไฟล์จากขนส่งเข้ามาในชีทแล้ว');
-  if(!files.length)throw new Error('Google Sheet ของ '+CARRIERS[carrier].label+' มี '+allFiles.length+' ไฟล์ แต่ทุกไฟล์ยังไม่มีแถวข้อมูล');
-  const total=Number(m.total)||files.reduce(function(a,f){return a+(Number(f.rows)||0);},0);
-  const out=[], seen={};
-  let got=0;
-  for(let fi=0;fi<files.length;fi++){
-    const f=files[fi];
-    let off=0;
-    while(true){
-      onProgress&&onProgress(got,total,'ไฟล์ '+(fi+1)+'/'+files.length+' · '+(f.name||'')+' · กำลังรอก้อนละ '+lim.toLocaleString()+' แถว');
-      const tq=Date.now();
-      /* ก้อนใหญ่อาจทำให้ Apps Script ตอบไม่ทัน/ล้ม → ลองใหม่โดยลดขนาดก้อนลงครึ่งหนึ่ง */
-      let d=null;
-      for(let t=1;t<=4&&!d;t++){
-        try{d=await jsonp(mk({mode:mode,file:f.i,offset:off,limit:lim}),120000);}
-        catch(e){
-          console.warn('[MASARU CS] GS data ไฟล์ '+(f.name||f.i)+' แถว '+off+' ก้อน '+lim+' ครั้งที่ '+t+' ไม่สำเร็จ',e);
-          if(t===4)throw new Error('ดึงไฟล์ "'+(f.name||('ที่ '+(fi+1)))+'" ไม่สำเร็จ ที่แถว '+off.toLocaleString()+' (ลอง 4 ครั้งแล้ว · สาเหตุ: '+(/ช้า/.test(e&&e.message||'')?'Apps Script ทำงานไม่เสร็จภายใน 2 นาที':'Apps Script ตอบกลับผิดพลาด')+') — แจ้งผู้ดูแลระบบ');
-          lim=Math.max(500,Math.floor(lim/2));
-          onProgress&&onProgress(got,total,'ไฟล์ '+(fi+1)+'/'+files.length+' · ลองใหม่ครั้งที่ '+(t+1)+' (ลดขนาดเหลือครั้งละ '+lim.toLocaleString()+' แถว)');
-          await new Promise(function(r){setTimeout(r,1500*t);});
-        }
-      }
-      if(!d||!d.ok){console.error('[MASARU CS] GS data',d);throw new Error('Google Sheet ตอบกลับว่า: '+((d&&d.error)||'ดึงข้อมูลไม่สำเร็จ')+' — แจ้งผู้ดูแลระบบ');}
-      (d.rows||[]).forEach(function(r){
-        if(r&&!Array.isArray(r)&&typeof r==='object')r=Object.values(r);
-        const k=clean(r&&r[0]);
-        if(!k||seen[k])return;
-        seen[k]=1;out.push(r);
-      });
-      got+=(d.rows||[]).length;
-      const dt=Date.now()-tq;
-      if(dt<15000)lim=Math.min(cap,lim*2);else if(dt>45000)lim=Math.max(500,Math.floor(lim/2));
-      if(d.next_offset==null)break;
-      off=d.next_offset;
-    }
-  }
-  onProgress&&onProgress(total||got,total||got,'ดึงครบ '+files.length+' ไฟล์');
-  if(!out.length){
-    console.warn('[MASARU CS] Google Sheet ส่งมา '+got+' แถว แต่ไม่มีเลขพัสดุ',m);
-    throw new Error(got
-      ? 'ดึงมา '+got.toLocaleString()+' แถว จาก '+files.length+' ไฟล์ แต่อ่านเลขพัสดุไม่ได้ — แจ้งผู้ดูแลระบบ'
-      : 'พบ '+files.length+' ไฟล์ใน Google Sheet ของ '+CARRIERS[carrier].label+' แต่ไม่มีแถวข้อมูลส่งกลับมา — ลองใหม่อีกครั้ง หากยังเป็นให้แจ้งผู้ดูแลระบบ');
-  }
-  return {rows:out,meta:m,total:total};
-}
-async function gsFetch(){
-  const btn=$('btnGsFetch');const t0=btn.textContent;
-  gsStart(btn,'กำลังดึงสถานะ...');
-  try{
-    const r=await gsAll('status',function(got,total,sub){
-      gsProg(got,total,'⏳ กำลังดึงสถานะจาก Google Sheet',sub);
-    });
-    
-    stF={name:'Google Sheet',raw:[['เลขพัสดุ','สถานะ']].concat(r.rows.map(function(x){return [x[0],x[1]];}))};
-    $('wHdr').value=1;
-    $('nameW').textContent='Google Sheet · '+r.rows.length.toLocaleString()+' แถว · '+(r.meta.fetched_at||'');
-    $('dropW').classList.add('done');
-    stRefreshCols();
-    stPreview();
-    note('stMsg','ok','✅ ดึงมาแล้ว '+r.rows.length.toLocaleString()+' แถว (ใช้เวลา '+gsElapsed()+') — ตรวจตารางด้านล่าง แล้วกด <b>อัปเดตสถานะ</b>');
-  }catch(e){note('stMsg','err','❌ '+esc(App.errText(e,'gsFetch')));}
-  finally{gsStop(btn,t0);}
-}
-async function gsFull(){
-  const c=sbClient();
-  if(!c){note('stMsg','err','เชื่อมต่อเซิร์ฟเวอร์ไม่ได้');return;}
-  const btn=$('btnGsFull');const t0=btn.textContent;
-  const NAMES=['ดึงข้อมูลจาก Google Sheet','บันทึกพัสดุเข้าระบบ','ติดสถานะปลายทาง'];
-  gsStart(btn,'กำลังดึงข้อมูล...');
-  try{
-    const r=await gsAll('full',function(got,total,sub){
-      gsProg(got,total,'⏳ ขั้นที่ 1/3 · ดึงข้อมูลจาก Google Sheet',sub,{n:1,of:3,names:NAMES});
-    });
-    
-
-    const parcels=[],marks={delivered:[],returned:[],transit:[]};
-    let noDate=0;
-    r.rows.forEach(function(x){
-      const trk=clean(x[0]);if(!trk)return;
-      const sd=clean(x[3]);
-      const okd=/^\d{4}-\d{2}-\d{2}$/.test(sd);
-      if(!okd)noDate++;
-      parcels.push({tracking:trk,carrier:carrier,ship_date:okd?sd:null,
-                    order_no:clean(x[2]),cod:Number(x[4])||0,fee:Number(x[5])||0});
-      let st=classify(x[1]);
-      if(st!=='returned'&&clean(x[6]))st='returned';
-      marks[st].push(trk);
-    });
-
-    let up=0;
-    btn.innerHTML='<span class="bspin"></span>กำลังบันทึก...';
-    for(let i=0;i<parcels.length;i+=500){
-      gsProg(i,parcels.length,'💾 ขั้นที่ 2/3 · บันทึกพัสดุเข้าระบบ','ครั้งละ 500 ชิ้น',{n:2,of:3,names:NAMES});
-      const r2=await c.rpc('bulk_parcel_upsert',{p:parcels.slice(i,i+500)});
-      if(r2.error)throw r2.error;
-      up+=Number(r2.data)||0;
-    }
-
-    const lbl={delivered:['เซ็นรับ (จาก Google Sheet)','เซ็นรับ'],
-               returned :['ตีกลับ (จาก Google Sheet)','ตีกลับ'],
-               transit  :['ระหว่างการติดตาม','ระหว่างติดตาม']};
-    const hit={delivered:0,returned:0,transit:0};
-    const allMarks=marks.delivered.length+marks.returned.length+marks.transit.length;
-    let doneMarks=0;
-    btn.innerHTML='<span class="bspin"></span>กำลังติดสถานะ...';
-    for(const k in marks){
-      const list=marks[k];
-      for(let i=0;i<list.length;i+=500){
-        gsProg(doneMarks,allMarks,'🏷️ ขั้นที่ 3/3 · ติดสถานะปลายทาง','กำลังติด "'+lbl[k][1]+'"',{n:3,of:3,names:NAMES});
-        const r3=await c.rpc('bulk_parcel_mark',{p:list.slice(i,i+500).map(function(x){return {k:x};}),
-                                                p_state:k,p_status:lbl[k][0]});
-        if(r3.error)throw r3.error;
-        hit[k]+=Number(r3.data)||0;
-        doneMarks+=Math.min(500,list.length-i);
-      }
-    }
-    note('stMsg',noDate?'warn':'ok',
-      '✅ ดึงเข้ารายงานแล้ว '+up.toLocaleString()+' ชิ้น (ใช้เวลา '+gsElapsed()+') · เซ็นรับ '+hit.delivered.toLocaleString()+
-      ' · ตีกลับ '+hit.returned.toLocaleString()+' · ระหว่างติดตาม '+hit.transit.toLocaleString()+
-      (noDate?'<br><span style="font-size:12px">⚠️ '+noDate.toLocaleString()+' ชิ้นไม่มีวันที่รับฝาก จะไม่ถูกนับเข้าเดือนไหน</span>':''));
-    stSummary();
-  }catch(e){note('stMsg','err','❌ '+esc(App.errText(e,'gsFull')));}
-  finally{gsStop(btn,t0);}
 }
 async function stSummary(){
   const c=sbClient();
@@ -1698,7 +1455,6 @@ function applyCarrier(){
   if($('dropW'))$('dropW').classList.remove('done');
   if($('stDetect'))$('stDetect').innerHTML='';
   $('stMsg').innerHTML='';$('stPrev').innerHTML='';
-  $('gsState').innerHTML='🔗 เชื่อมกับ Google Sheet ของ '+meta.label+' แล้ว — ดึงทุกไฟล์ที่ขนส่งส่งมาให้อัตโนมัติ';
   $('colsF').textContent=meta.hint;
   if(!$('kwDel').value)$('kwDel').value=KW_DEF.del;
   if(!$('kwRet').value)$('kwRet').value=KW_DEF.ret;
@@ -1760,8 +1516,6 @@ $('wHdr').onchange=stRefreshCols;
 $('btnStPrev').onclick=stPreview;
 $('btnStGo').onclick=stApply;
 $('btnStSum').onclick=stSummary;
-$('btnGsFetch').onclick=gsFetch;
-$('btnGsFull').onclick=gsFull;
 $('btnStClear').onclick=function(){
   stF=null;stRows=null;
   $('nameW').textContent='ยังไม่ได้เลือกไฟล์';$('dropW').classList.remove('done');
